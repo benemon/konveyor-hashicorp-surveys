@@ -1,0 +1,104 @@
+- name: "A: highly manual enterprise"
+  answers: [4, 1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 2, 2, 2]
+  direct:
+    Infrastructure Lifecycle: strong
+    Machine Identity and Secrets: strong
+    Human Access: moderate
+    Service Networking: strong
+    Workload Lifecycle: moderate
+  presented: [Infrastructure Lifecycle, Machine Identity and Secrets, Service Networking]
+  adjacent: {}
+  solution_adjacency: []
+  patterns: [Network rules without service identity]
+  overall: red
+
+- name: "B: mature OpenShift platform, static secrets"
+  answers: [3, 4, 4, 4, 1, 1, 2, 4, 3, 3, 3, 4, 3, 3]
+  direct:
+    Machine Identity and Secrets: strong
+  presented: [Machine Identity and Secrets]
+  adjacent: {}
+  solution_adjacency: [Machine Identity and Secrets]
+  patterns: []
+  overall: red
+
+- name: "C: fragmented infrastructure as code"
+  answers: [1, 3, 2, 3, 3, 3, 3, 4, 3, 3, 3, 4, 3, 3]
+  direct:
+    Infrastructure Lifecycle: moderate
+  presented: [Infrastructure Lifecycle]
+  adjacent: {}
+  solution_adjacency: []
+  patterns: [Automated delivery without guardrails]
+  overall: yellow
+
+- name: "D: mature platform organisation"
+  answers: [4, 4, 4, 4, 4, 4, 3, 4, 4, 3, 4, 5, 4, 4]
+  direct: {}
+  presented: []
+  adjacent: {}
+  solution_adjacency: []
+  patterns: []
+  overall: green
+
+- name: "E: respondent lacks visibility"
+  answers: [1, 5, 4, 4, 5, 3, 5, 4, 3, 3, 5, 4, 3, 3]
+  direct: {}
+  presented: []
+  adjacent: {}
+  solution_adjacency: []
+  patterns: []
+  overall: unknown
+
+- name: "F: mature platform, shared admin accounts"
+  answers: [4, 4, 4, 4, 4, 4, 3, 4, 1, 3, 4, 5, 4, 4]
+  direct:
+    Human Access: strong
+  presented: [Human Access]
+  adjacent:
+    Machine Identity and Secrets: [Human Access]
+  solution_adjacency: [Human Access]
+  patterns: ["Controlled path, uncontrolled credentials"]
+  overall: red
+
+- name: "G: capable platform with contradictions"
+  answers: [2, 4, 4, 1, 3, 1, 3, 1, 3, 2, 3, 1, 3, 3]
+  direct:
+    Infrastructure Lifecycle: strong
+    Machine Identity and Secrets: strong
+    Human Access: strong
+    Service Networking: strong
+  presented: [Human Access, Infrastructure Lifecycle, Machine Identity and Secrets]
+  adjacent: {}
+  solution_adjacency: []
+  patterns:
+    - Automation stops at day one
+    - Centralised but static
+    - Identity without session accountability
+    - Trust by network location
+  overall: red
+
+- name: "H: hybrid estate, partly standardised"
+  answers: [4, 3, 3, 4, 4, 4, 4, 4, 4, 3, 2, 3, 3, 2]
+  direct:
+    Infrastructure Lifecycle: moderate
+    Service Networking: moderate
+    Workload Lifecycle: moderate
+  presented: [Infrastructure Lifecycle, Service Networking, Workload Lifecycle]
+  adjacent: {}
+  solution_adjacency: []
+  patterns:
+    - Automated delivery with a human gate
+    - "Distributed estate, fragmented control planes"
+    - Non-standard workloads sit outside the main platform
+  overall: yellow
+
+- name: "I: consistent deployment, uneven networking"
+  answers: [4, 4, 4, 4, 4, 4, 3, 4, 4, 3, 2, 5, 4, 4]
+  direct:
+    Service Networking: moderate
+  presented: [Service Networking]
+  adjacent: {}
+  solution_adjacency: [Service Networking]
+  patterns: ["Deployment is standardised, networking is not"]
+  overall: green

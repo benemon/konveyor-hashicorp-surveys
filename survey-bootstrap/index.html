@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HashiCorp Snapshot Bootstrap</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@patternfly/patternfly@5/patternfly.min.css">
+  <style>
+    /* PatternFly sets display on these components, which overrides the hidden attribute. */
+    [hidden] { display: none !important; }
+    .pf-v5-c-masthead__brand { color: var(--pf-v5-global--Color--light-100); font-size: var(--pf-v5-global--FontSize--xl); }
+    #readout-result ul { list-style: disc; padding-left: var(--pf-v5-global--spacer--lg); }
+  </style>
+</head>
+<body>
+  <div class="pf-v5-c-page">
+    <header class="pf-v5-c-masthead">
+      <div class="pf-v5-c-masthead__main">
+        <span class="pf-v5-c-masthead__brand">HashiCorp Snapshot Bootstrap</span>
+      </div>
+    </header>
+    <main class="pf-v5-c-page__main">
+      <section class="pf-v5-c-page__main-section pf-m-light">
+        <div class="pf-v5-c-tabs">
+          <ul class="pf-v5-c-tabs__list" role="tablist">
+            <li class="pf-v5-c-tabs__item pf-m-current" role="presentation">
+              <button class="pf-v5-c-tabs__link" type="button" role="tab" data-panel="start-panel">
+                <span class="pf-v5-c-tabs__item-text">Start an assessment</span>
+              </button>
+            </li>
+            <li class="pf-v5-c-tabs__item" role="presentation">
+              <button class="pf-v5-c-tabs__link" type="button" role="tab" data-panel="readout-panel">
+                <span class="pf-v5-c-tabs__item-text">Generate a readout</span>
+              </button>
+            </li>
+          </ul>
+        </div>
+      </section>
+      <section class="pf-v5-c-page__main-section" id="start-panel" role="tabpanel">
+        <div class="pf-v5-c-card">
+          <div class="pf-v5-c-card__body">
+            <form class="pf-v5-c-form pf-m-limit-width" id="start">
+              <div class="pf-v5-c-form__group">
+                <div class="pf-v5-c-form__group-label">
+                  <label class="pf-v5-c-form__label" for="organisation">
+                    <span class="pf-v5-c-form__label-text">Organisation</span>
+                    <span class="pf-v5-c-form__label-required" aria-hidden="true">*</span>
+                  </label>
+                </div>
+                <div class="pf-v5-c-form__group-control">
+                  <span class="pf-v5-c-form-control pf-m-required">
+                    <input type="text" id="organisation" required autofocus>
+                  </span>
+                </div>
+              </div>
+              <div class="pf-v5-c-form__group">
+                <div class="pf-v5-c-form__group-label">
+                  <label class="pf-v5-c-form__label" for="email">
+                    <span class="pf-v5-c-form__label-text">Contact email</span>
+                    <span class="pf-v5-c-form__label-required" aria-hidden="true">*</span>
+                  </label>
+                </div>
+                <div class="pf-v5-c-form__group-control">
+                  <span class="pf-v5-c-form-control pf-m-required">
+                    <input type="email" id="email" required>
+                  </span>
+                </div>
+              </div>
+              <div class="pf-v5-c-form__group" id="questionnaire-group" hidden>
+                <div class="pf-v5-c-form__group-label">
+                  <label class="pf-v5-c-form__label" for="questionnaire">
+                    <span class="pf-v5-c-form__label-text">Questionnaire</span>
+                  </label>
+                </div>
+                <div class="pf-v5-c-form__group-control">
+                  <span class="pf-v5-c-form-control">
+                    <select id="questionnaire"></select>
+                  </span>
+                </div>
+              </div>
+              <div class="pf-v5-c-alert pf-m-danger pf-m-inline" id="error" hidden>
+                <p class="pf-v5-c-alert__title"></p>
+              </div>
+              <div class="pf-v5-c-form__group pf-m-action">
+                <div class="pf-v5-c-form__actions">
+                  <button class="pf-v5-c-button pf-m-primary" type="submit">Start assessment</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+      <section class="pf-v5-c-page__main-section" id="readout-panel" role="tabpanel" hidden>
+        <div class="pf-v5-c-card">
+          <div class="pf-v5-c-card__body">
+            <form class="pf-v5-c-form pf-m-limit-width" id="readout">
+              <div class="pf-v5-c-form__group">
+                <div class="pf-v5-c-form__group-label">
+                  <label class="pf-v5-c-form__label" for="readout-organisation">
+                    <span class="pf-v5-c-form__label-text">Organisation</span>
+                  </label>
+                </div>
+                <div class="pf-v5-c-form__group-control">
+                  <span class="pf-v5-c-form-control">
+                    <select id="readout-organisation" required></select>
+                  </span>
+                </div>
+              </div>
+              <div class="pf-v5-c-alert pf-m-inline" id="readout-status" hidden>
+                <p class="pf-v5-c-alert__title"></p>
+                <div class="pf-v5-c-alert__description" id="readout-result"></div>
+              </div>
+              <div class="pf-v5-c-form__group pf-m-action">
+                <div class="pf-v5-c-form__actions">
+                  <button class="pf-v5-c-button pf-m-primary" type="submit">Generate readout</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script>
+    const form = document.getElementById("start");
+    const questionnaire = document.getElementById("questionnaire");
+    const error = document.getElementById("error");
+    const readout = document.getElementById("readout");
+    const readoutOrganisation = document.getElementById("readout-organisation");
+    const readoutStatus = document.getElementById("readout-status");
+    const readoutResult = document.getElementById("readout-result");
+
+    const tabs = document.querySelectorAll(".pf-v5-c-tabs__link");
+    for (const tab of tabs) {
+      tab.addEventListener("click", () => {
+        for (const other of tabs) {
+          other.parentElement.classList.toggle("pf-m-current", other === tab);
+          document.getElementById(other.dataset.panel).hidden = other !== tab;
+        }
+      });
+    }
+
+    // Relative, so that requests stay under the path the route serves.
+    async function api(path, body) {
+      const response = await fetch(`api/${path}`, {
+        method: body ? "POST" : "GET",
+        headers: { "Content-Type": "application/json" },
+        body: body && JSON.stringify(body),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error);
+      }
+      return result;
+    }
+
+    function fail(reason) {
+      error.firstElementChild.textContent = reason.message;
+      error.hidden = false;
+    }
+
+    function add(parent, tag, text) {
+      const element = document.createElement(tag);
+      element.textContent = text;
+      parent.append(element);
+      return element;
+    }
+
+    function show(kind, title, result) {
+      readoutStatus.className = `pf-v5-c-alert pf-m-inline pf-m-${kind}`;
+      readoutStatus.firstElementChild.textContent = title;
+      readoutResult.replaceChildren();
+      if (result) {
+        add(readoutResult, "p", result.verdict);
+        const areas = add(readoutResult, "ul");
+        for (const area of result.areas) {
+          add(areas, "li", `${area.product} (${area.capability}): ${area.strength} - ${area.facets.join(", ")}`);
+        }
+        add(readoutResult, "p", `${result.issues} issues written to MTA.`);
+        if (result.patterns.length) {
+          add(readoutResult, "p", "Patterns across answers:");
+          const patterns = add(readoutResult, "ul");
+          for (const pattern of result.patterns) {
+            add(patterns, "li", `${pattern.name} (${pattern.products.join(", ")}): ${pattern.detail}`);
+          }
+        }
+        add(readoutResult, "a", "View the issues in MTA").href = result.url;
+      }
+      readoutStatus.hidden = false;
+    }
+
+    api("questionnaires").then((names) => {
+      for (const name of names) {
+        questionnaire.add(new Option(name));
+      }
+      document.getElementById("questionnaire-group").hidden = names.length < 2;
+    }).catch(fail);
+
+    api("organisations").then((names) => {
+      for (const name of names) {
+        readoutOrganisation.add(new Option(name));
+      }
+    }).catch((reason) => show("danger", reason.message));
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      error.hidden = true;
+      try {
+        const started = await api("assessments", {
+          organisation: document.getElementById("organisation").value,
+          email: document.getElementById("email").value,
+          questionnaire: questionnaire.value,
+        });
+        location.assign(started.url);
+      } catch (reason) {
+        fail(reason);
+      }
+    });
+
+    readout.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = readout.querySelector("button");
+      const organisation = readoutOrganisation.value;
+      button.disabled = true;
+      try {
+        const { task } = await api("readouts", { organisation });
+        let result = { state: "Submitted" };
+        while (!["Succeeded", "Failed", "Canceled"].includes(result.state)) {
+          show("info", `Readout task ${task}: ${result.state}`);
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          result = await api(`readouts/${task}`);
+        }
+        if (result.state === "Succeeded") {
+          show("success", `Readout for ${organisation}, generated ${result.generated}`, result);
+        } else {
+          show("danger", `Readout task ${task} ${result.state.toLowerCase()}: ${result.errors.join("; ")}`);
+        }
+      } catch (reason) {
+        show("danger", reason.message);
+      } finally {
+        button.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
