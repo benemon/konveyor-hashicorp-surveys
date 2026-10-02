@@ -1,0 +1,116 @@
+{{- $openshift := include "hashicorp-healthcheck.openshift" . }}
+{{- $image := .Values.images.console }}
+{{- if $openshift }}
+{{- $image = printf "%s/healthcheck-console:latest" (include "hashicorp-healthcheck.registry" .) }}
+{{- with lookup "apps/v1" "Deployment" .Release.Namespace "healthcheck-console" }}
+{{- $image = (index .spec.template.spec.containers 0).image }}
+{{- end }}
+{{- end }}
+# The setup job writes the API key into this secret.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: healthcheck-console
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: healthcheck-console
+  {{- if $openshift }}
+  annotations:
+    image.openshift.io/triggers: >-
+      [{"from":{"kind":"ImageStreamTag","name":"healthcheck-console:latest"},
+      "fieldPath":"spec.template.spec.containers[?(@.name==\"healthcheck-console\")].image"}]
+  {{- end }}
+spec:
+  selector:
+    matchLabels:
+      app: healthcheck-console
+  template:
+    metadata:
+      labels:
+        app: healthcheck-console
+    spec:
+      containers:
+        - name: healthcheck-console
+          # On OpenShift the image trigger rewrites this field with each build's digest.
+          # Applying the live value back keeps an upgrade from conflicting with it.
+          image: {{ $image }}
+          # An image loaded into a cluster by hand cannot be pulled.
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: MTA_HUB
+              value: http://{{ .Values.appName }}-hub:8080
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /console/
+              port: 8080
+          volumeMounts:
+            - name: api-key
+              mountPath: /etc/healthcheck-console
+      volumes:
+        - name: api-key
+          secret:
+            secretName: healthcheck-console
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: healthcheck-console
+spec:
+  selector:
+    app: healthcheck-console
+  ports:
+    - port: 8080
+---
+# Served on the UI's own host, so that the page shares the browser tab's session.
+{{- if $openshift }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: healthcheck-console
+spec:
+  host: {{ include "hashicorp-healthcheck.host" . }}
+  path: /console
+  to:
+    kind: Service
+    name: healthcheck-console
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+{{- else }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: healthcheck-console
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /console
+            pathType: Prefix
+            backend:
+              service:
+                name: healthcheck-console
+                port:
+                  number: 8080
+      {{- with .Values.host }}
+      host: {{ . }}
+      {{- end }}
+{{- end }}
+---
+# The operator denies ingress to every pod in the namespace by default.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: healthcheck-console
+spec:
+  podSelector:
+    matchLabels:
+      app: healthcheck-console
+  ingress:
+    - ports:
+        - port: 8080

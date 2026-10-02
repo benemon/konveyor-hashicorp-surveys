@@ -1,0 +1,9 @@
+FROM registry.access.redhat.com/ubi9/python-312-minimal
+USER 0
+# Tectonic keeps its TeX files here. The pod's user is arbitrary, so the path does not depend on a home directory.
+ENV XDG_CACHE_HOME=/opt/cache
+# The cover is not in the repository, so the build takes it only when it is present.
+COPY --chmod=644 app.py readout.py pointers.py summary.py fetch.py cover.pd[f] ./
+RUN python fetch.py && rm fetch.py && chmod -R a+rX /opt/cache
+USER 1001
+CMD ["python", "app.py"]

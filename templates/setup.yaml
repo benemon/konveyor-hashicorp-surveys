@@ -1,0 +1,86 @@
+{{- $questionnaire := .Files.Get "hashicorp-healthcheck/questionnaire.yaml" | fromYaml | toJson }}
+{{- $script := .Files.Get "hashicorp-healthcheck/setup.py" }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: hashicorp-healthcheck-admin
+stringData:
+  username: {{ .Values.admin.username | quote }}
+  password: {{ .Values.admin.password | quote }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hashicorp-healthcheck-setup
+data:
+  setup.py: {{ $script | quote }}
+  questionnaire.json: {{ $questionnaire | quote }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: hashicorp-healthcheck-setup
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: hashicorp-healthcheck-setup
+rules:
+  - apiGroups: [""]
+    resources: [secrets]
+    resourceNames: [healthcheck-console]
+    verbs: [get, patch]
+  {{- if include "hashicorp-healthcheck.openshift" . }}
+  - apiGroups: [build.openshift.io]
+    resources: [buildconfigs/instantiate]
+    verbs: [create]
+  {{- end }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: hashicorp-healthcheck-setup
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: hashicorp-healthcheck-setup
+subjects:
+  - kind: ServiceAccount
+    name: hashicorp-healthcheck-setup
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hashicorp-healthcheck-setup
+  annotations:
+    # The job starts the builds, so it runs after the release's build definitions are applied.
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      serviceAccountName: hashicorp-healthcheck-setup
+      restartPolicy: Never
+      containers:
+        - name: setup
+          image: {{ .Values.pythonImage }}
+          imagePullPolicy: IfNotPresent
+          command: [python, /setup/setup.py]
+          env:
+            - name: BUILDS
+              value: {{ if include "hashicorp-healthcheck.openshift" . }}healthcheck-console healthcheck-readout{{ else }}""{{ end }}
+            - name: MTA_HUB
+              value: http://{{ .Values.appName }}-hub:8080
+            - name: NAMESPACE
+              value: {{ .Release.Namespace }}
+          envFrom:
+            - secretRef:
+                name: hashicorp-healthcheck-admin
+          volumeMounts:
+            - name: setup
+              mountPath: /setup
+      volumes:
+        - name: setup
+          configMap:
+            name: hashicorp-healthcheck-setup

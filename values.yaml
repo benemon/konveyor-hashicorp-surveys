@@ -1,0 +1,25 @@
+# The operator's application name: "mta" for MTA, "tackle" for upstream Konveyor.
+# The hub service is <appName>-hub and the UI route is <appName>.
+appName: mta
+
+# Spec of the Tackle resource the operator turns into the instance.
+tackle:
+  spec: {}
+
+# A hub login allowed to create API keys. Used once, to mint the key the service uses.
+admin:
+  username: admin
+  password: admin
+
+# Host of the Healthcheck Console route or ingress. It must be the UI's host. On OpenShift
+# the default is the host the operator gives the UI route.
+host: ""
+
+# Image for the setup job.
+pythonImage: registry.access.redhat.com/ubi9/python-312-minimal
+
+# The two images on a cluster without OpenShift builds, built from the Containerfiles in
+# healthcheck-console/ and healthcheck-readout/. On OpenShift the chart builds them.
+images:
+  console: localhost/healthcheck-console:latest
+  readout: localhost/healthcheck-readout:latest

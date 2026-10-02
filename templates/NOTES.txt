@@ -1,0 +1,10 @@
+The setup job waits for the hub, mints an API key, seeds the tag categories and imports the questionnaire.
+On OpenShift it also starts the two image builds.
+
+  kubectl -n {{ .Release.Namespace }} get jobs
+
+{{ if include "hashicorp-healthcheck.openshift" . -}}
+Healthcheck Console: https://{{ include "hashicorp-healthcheck.host" . }}/console/
+{{- else -}}
+Healthcheck Console: /console/ on the UI's address.
+{{- end }}

@@ -1,0 +1,16 @@
+apiVersion: tackle.konveyor.io/v1alpha1
+kind: Addon
+metadata:
+  name: healthcheck-readout
+spec:
+  container:
+    name: addon
+    {{- if include "hashicorp-healthcheck.openshift" . }}
+    image: {{ include "hashicorp-healthcheck.registry" . }}/healthcheck-readout:latest
+    # The hub defaults this to IfNotPresent, which would keep running a stale :latest image.
+    imagePullPolicy: Always
+    {{- else }}
+    image: {{ .Values.images.readout }}
+    # An image loaded into a cluster by hand cannot be pulled.
+    imagePullPolicy: IfNotPresent
+    {{- end }}

@@ -1,0 +1,627 @@
+name: HashiCorp Healthcheck
+description: A five-minute, product-neutral healthcheck of how infrastructure is delivered, secured, connected and run. It produces signals for further discussion, not findings.
+required: true
+sections:
+- order: 1
+  name: Environment
+  questions:
+  - order: 1
+    text: Where do most of your workloads run today?
+    explanation: Choose where the larger share of your production workloads runs. If they are split between your own data centres and public cloud, choose the mix.
+    answers:
+    - order: 1
+      text: Mostly in one public cloud
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'environment: one-cloud'
+    - order: 2
+      text: Across several public clouds
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'environment: several-clouds'
+    - order: 3
+      text: Mostly in our own data centres
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'environment: own-data-centres'
+    - order: 4
+      text: A mix of our own data centres and public cloud
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'environment: hybrid'
+- order: 2
+  name: Infrastructure Delivery
+  questions:
+  - order: 1
+    text: How is most infrastructure provisioned today?
+    explanation: Think about how a typical new environment, network or database is created. Choose the answer that describes most of your infrastructure, even if some teams do better.
+    answers:
+    - order: 1
+      text: Through cloud consoles, tickets or other manual steps
+      risk: red
+      rationale: Delivery depends on manual steps, which slows teams down and makes consistency and governance hard to maintain as the estate grows.
+      mitigation: Establish a repeatable infrastructure lifecycle based on declarative automation and reusable delivery patterns.
+      applyTags:
+      - category: Answer Key
+        tag: 'provisioning: manual'
+      - category: Capability Signal
+        tag: Infrastructure Lifecycle
+    - order: 2
+      text: With scripts or automation that each team maintains for itself
+      risk: yellow
+      rationale: Automation exists, but each team maintaining its own duplicates effort and leads to inconsistent controls.
+      mitigation: Bring team-specific automation into a common workflow with shared, versioned components.
+      applyTags:
+      - category: Answer Key
+        tag: 'provisioning: team-scripts'
+      - category: Capability Signal
+        tag: Infrastructure Lifecycle
+    - order: 3
+      text: With infrastructure as code, but tools and patterns differ between teams
+      risk: yellow
+      rationale: Infrastructure is automated, but differing tools and patterns make reuse, governance and movement of people between teams harder to scale.
+      mitigation: Converge on common workflows and a shared library of reusable infrastructure patterns.
+      applyTags:
+      - category: Answer Key
+        tag: 'provisioning: fragmented-code'
+      - category: Capability Signal
+        tag: Infrastructure Lifecycle
+    - order: 4
+      text: With infrastructure as code built from shared, reusable patterns
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'provisioning: shared-code'
+    - order: 5
+      text: I don't know
+      risk: unknown
+      applyTags:
+      - category: Answer Key
+        tag: 'provisioning: unknown'
+  - order: 2
+    text: How are your organisation's standards and policies applied to new infrastructure?
+    explanation: Standards include security rules, cost limits, naming and approved configurations. Choose how they are usually checked when infrastructure is created or changed.
+    answers:
+    - order: 1
+      text: By manual review, or after the fact when a problem is found
+      risk: red
+      rationale: Standards checked by hand or after the event allow non-compliant infrastructure to reach production and make remediation expensive.
+      mitigation: Express standards as automated checks that run before infrastructure changes are applied.
+      applyTags:
+      - category: Answer Key
+        tag: 'guardrails: after-the-fact'
+      - category: Capability Signal
+        tag: Infrastructure Lifecycle
+    - order: 2
+      text: Each team applies its own checks
+      risk: yellow
+      rationale: Team-level checks give uneven coverage, so the same standard can be enforced differently, or not at all, from one team to the next.
+      mitigation: Define policies once and apply them consistently across every team's delivery workflow.
+      applyTags:
+      - category: Answer Key
+        tag: 'guardrails: per-team'
+      - category: Capability Signal
+        tag: Infrastructure Lifecycle
+    - order: 3
+      text: A central team reviews and approves changes by hand
+      risk: yellow
+      rationale: Central manual approval protects standards but becomes a queue, and reviewers cannot reliably inspect every change at scale.
+      mitigation: Automate routine policy checks so that reviewers handle exceptions and teams can self-serve within agreed guardrails.
+      applyTags:
+      - category: Answer Key
+        tag: 'guardrails: central-approval'
+      - category: Capability Signal
+        tag: Infrastructure Lifecycle
+    - order: 4
+      text: Automated checks run on every change, and teams self-serve within them
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'guardrails: automated'
+    - order: 5
+      text: I don't know
+      risk: unknown
+      applyTags:
+      - category: Answer Key
+        tag: 'guardrails: unknown'
+  - order: 3
+    text: Once infrastructure is built, how are changes made to it?
+    explanation: Consider routine changes after the first deployment, such as resizing, patching or reconfiguring. A difference means the running infrastructure no longer matches its definition.
+    answers:
+    - order: 1
+      text: Mostly by hand; records often don't match what is running
+      risk: red
+      rationale: When changes are made by hand, the recorded configuration stops describing what is running, which makes recovery, audit and further automation unreliable.
+      mitigation: Route day-two changes through the same automated workflow used for provisioning, so that the definition stays the source of truth.
+      applyTags:
+      - category: Answer Key
+        tag: 'change and drift: by-hand'
+      - category: Capability Signal
+        tag: Infrastructure Lifecycle
+    - order: 2
+      text: A mix of automation and manual changes; differences surface when something breaks
+      risk: yellow
+      rationale: Mixing manual and automated change lets differences accumulate unnoticed until they cause an incident.
+      mitigation: Detect differences between defined and actual infrastructure continuously, and reduce the routes by which manual change can occur.
+      applyTags:
+      - category: Answer Key
+        tag: 'change and drift: mixed'
+      - category: Capability Signal
+        tag: Infrastructure Lifecycle
+    - order: 3
+      text: Through automation, but differences are found and fixed by hand
+      risk: yellow
+      rationale: Differences are found, but correcting them by hand is slow and depends on individuals noticing and acting.
+      mitigation: Add automated detection and reconciliation so that differences are corrected through the delivery workflow.
+      applyTags:
+      - category: Answer Key
+        tag: 'change and drift: fixed-by-hand'
+      - category: Capability Signal
+        tag: Infrastructure Lifecycle
+    - order: 4
+      text: Through the same automated workflow that built it; differences are detected and corrected
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'change and drift: reconciled'
+    - order: 5
+      text: I don't know
+      risk: unknown
+      applyTags:
+      - category: Answer Key
+        tag: 'change and drift: unknown'
+- order: 3
+  name: Security and Access
+  questions:
+  - order: 1
+    text: How do applications typically obtain credentials such as database passwords or API keys?
+    explanation: Think about how a typical application gets a database password, API key or token when it starts or while it runs.
+    answers:
+    - order: 1
+      text: From configuration files, source code or settings maintained by hand
+      risk: red
+      rationale: Credentials kept in files, code or hand-maintained settings are easy to copy and hard to track, so exposure can go unnoticed and revocation is difficult.
+      mitigation: Move credentials out of code and configuration into centrally managed storage with access control and audit.
+      applyTags:
+      - category: Answer Key
+        tag: 'secret storage: in-files'
+      - category: Capability Signal
+        tag: Machine Identity and Secrets
+    - order: 2
+      text: From several secret stores, depending on the platform or team
+      risk: yellow
+      rationale: Several stores mean several sets of access rules, audit trails and rotation practices, which makes consistent control difficult.
+      mitigation: Consolidate towards a common approach to secrets, with consistent access policy and audit across platforms.
+      applyTags:
+      - category: Answer Key
+        tag: 'secret storage: several-stores'
+      - category: Capability Signal
+        tag: Machine Identity and Secrets
+    - order: 3
+      text: From one central secrets store
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'secret storage: central-store'
+    - order: 4
+      text: They are issued automatically, based on the application's own identity
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'secret storage: identity-issued'
+    - order: 5
+      text: I don't know
+      risk: unknown
+      applyTags:
+      - category: Answer Key
+        tag: 'secret storage: unknown'
+  - order: 2
+    text: How long do application credentials usually stay valid?
+    explanation: Consider the credentials applications use to reach databases, queues and other services. Choose what happens for most of them.
+    answers:
+    - order: 1
+      text: Until someone changes them by hand; they are rarely rotated
+      risk: red
+      rationale: Credentials that are rarely changed remain useful to anyone who obtains them, and rotating them by hand is disruptive enough that it tends to be postponed.
+      mitigation: Automate rotation, and move towards credentials that are issued on demand with a short lifetime.
+      applyTags:
+      - category: Answer Key
+        tag: 'rotation: rarely'
+      - category: Capability Signal
+        tag: Machine Identity and Secrets
+    - order: 2
+      text: They are rotated on a schedule, mostly by a manual process
+      risk: yellow
+      rationale: Manual rotation on a schedule is labour-intensive and error-prone, and credentials remain valid for the whole interval between rotations.
+      mitigation: Automate the rotation process and shorten credential lifetimes where applications can support it.
+      applyTags:
+      - category: Answer Key
+        tag: 'rotation: manual-schedule'
+      - category: Capability Signal
+        tag: Machine Identity and Secrets
+    - order: 3
+      text: They are rotated automatically on a schedule
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'rotation: automatic'
+    - order: 4
+      text: They are short-lived and issued on demand
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'rotation: short-lived'
+    - order: 5
+      text: I don't know
+      risk: unknown
+      applyTags:
+      - category: Answer Key
+        tag: 'rotation: unknown'
+  - order: 3
+    text: How are certificates for internal services issued and renewed?
+    explanation: Internal services are those reached only from inside your organisation. Consider the certificates they use to identify themselves and to encrypt traffic.
+    answers:
+    - order: 1
+      text: Requested and renewed by hand; expiries have caused outages
+      risk: red
+      rationale: Manual certificate handling makes expiry an operational risk and discourages short certificate lifetimes.
+      mitigation: Automate certificate issuance and renewal from a managed internal certificate authority.
+      applyTags:
+      - category: Answer Key
+        tag: 'certificates: by-hand'
+      - category: Capability Signal
+        tag: Machine Identity and Secrets
+    - order: 2
+      text: Partly automated; it varies by team or platform
+      risk: yellow
+      rationale: Uneven automation leaves some services dependent on manual renewal, and those are where expiries are most likely to occur.
+      mitigation: Extend automated issuance and renewal to all teams and platforms through a common service.
+      applyTags:
+      - category: Answer Key
+        tag: 'certificates: partly-automated'
+      - category: Capability Signal
+        tag: Machine Identity and Secrets
+    - order: 3
+      text: Issued and renewed automatically for most services
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'certificates: automated'
+    - order: 4
+      text: Certificates are not commonly used for internal services
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'certificates: not-used'
+    - order: 5
+      text: I don't know
+      risk: unknown
+      applyTags:
+      - category: Answer Key
+        tag: 'certificates: unknown'
+  - order: 4
+    text: How do engineers connect to servers, databases and clusters to administer them?
+    explanation: Consider the network route an engineer takes to reach a production system for maintenance or troubleshooting.
+    answers:
+    - order: 1
+      text: Directly from the corporate network, with nothing in between
+      risk: red
+      rationale: When any machine on the corporate network can reach administrative interfaces directly, a single compromised device or account has a wide reach.
+      mitigation: Place an identity-aware access layer in front of administrative interfaces so that connections are authorised per system.
+      applyTags:
+      - category: Answer Key
+        tag: 'access path: direct'
+      - category: Capability Signal
+        tag: Human Access
+    - order: 2
+      text: Through a VPN that gives broad network access once connected
+      risk: yellow
+      rationale: A VPN grants access to a network rather than to specific systems, so engineers can reach far more than their role requires.
+      mitigation: Move from network-level access to access granted per system on the basis of identity and role.
+      applyTags:
+      - category: Answer Key
+        tag: 'access path: vpn'
+      - category: Capability Signal
+        tag: Human Access
+    - order: 3
+      text: Through bastion or jump hosts managed separately per environment
+      risk: yellow
+      rationale: Jump hosts managed separately in each environment multiply the access rules, keys and audit trails that must be maintained.
+      mitigation: Consolidate access through a common, centrally governed service with consistent policy across environments.
+      applyTags:
+      - category: Answer Key
+        tag: 'access path: bastion'
+      - category: Capability Signal
+        tag: Human Access
+    - order: 4
+      text: Through an access service that connects them only to the systems they are approved for
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'access path: brokered'
+    - order: 5
+      text: I don't know
+      risk: unknown
+      applyTags:
+      - category: Answer Key
+        tag: 'access path: unknown'
+  - order: 5
+    text: What credentials are used to get into the systems engineers administer?
+    explanation: Consider the account, key or password presented to the server, database or cluster itself, however the engineer reached it.
+    answers:
+    - order: 1
+      text: Shared accounts, keys or passwords
+      risk: red
+      rationale: Shared credentials cannot be attributed to an individual, are difficult to withdraw when someone leaves, and tend to spread beyond their intended users.
+      mitigation: Replace shared credentials with access tied to individual identity, and issue the underlying credentials centrally so that they can be rotated.
+      applyTags:
+      - category: Answer Key
+        tag: 'access credentials: shared'
+      - category: Capability Signal
+        tag: Human Access
+      - category: Adjacent Capability Signal
+        tag: Machine Identity and Secrets
+    - order: 2
+      text: Personal keys or passwords that each engineer manages and that rarely expire
+      risk: yellow
+      rationale: Long-lived personal credentials rely on each engineer to protect and retire them, and often remain valid after a role changes.
+      mitigation: Tie access to the engineer's organisational identity, with credentials that are time-limited and issued when needed.
+      applyTags:
+      - category: Answer Key
+        tag: 'access credentials: personal-long-lived'
+      - category: Capability Signal
+        tag: Human Access
+    - order: 3
+      text: Their single sign-on identity, with access granted by role
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'access credentials: single-sign-on'
+    - order: 4
+      text: Credentials issued or injected for the session that expire automatically; engineers may never see them
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'access credentials: per-session'
+    - order: 5
+      text: I don't know
+      risk: unknown
+      applyTags:
+      - category: Answer Key
+        tag: 'access credentials: unknown'
+  - order: 6
+    text: Could you show who accessed a given production system last week, and what they did?
+    explanation: 'Think of an audit request or an incident investigation: could you produce a record of who connected, and of what they did during the session?'
+    answers:
+    - order: 1
+      text: No, or only by piecing together logs from several places
+      risk: red
+      rationale: Without a single record of access, investigating an incident or answering an audit request is slow and may be incomplete.
+      mitigation: Route administrative access through a point that records who connected to what, and when.
+      applyTags:
+      - category: Answer Key
+        tag: 'visibility: none'
+      - category: Capability Signal
+        tag: Human Access
+    - order: 2
+      text: Who connected, yes; what they did, no
+      risk: yellow
+      rationale: Knowing who connected, but not what was done, limits the ability to investigate incidents and to demonstrate control over privileged activity.
+      mitigation: Add session-level logging or recording for access to sensitive systems.
+      applyTags:
+      - category: Answer Key
+        tag: 'visibility: who-only'
+      - category: Capability Signal
+        tag: Human Access
+    - order: 3
+      text: Yes; sessions are centrally logged or recorded
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'visibility: recorded'
+    - order: 4
+      text: I don't know
+      risk: unknown
+      applyTags:
+      - category: Answer Key
+        tag: 'visibility: unknown'
+- order: 4
+  name: Runtime and Connectivity
+  questions:
+  - order: 1
+    text: How do applications find each other across your environments?
+    explanation: Consider how one application learns the address of another that it depends on, especially when the two run in different environments or on different platforms.
+    answers:
+    - order: 1
+      text: Fixed addresses or host files maintained by hand
+      risk: red
+      rationale: Hand-maintained addresses break when services move or scale, and every change requires coordinated manual updates.
+      mitigation: Introduce a service registry so that applications locate each other by name, with health-aware records that update automatically.
+      applyTags:
+      - category: Answer Key
+        tag: 'discovery: fixed-addresses'
+      - category: Capability Signal
+        tag: Service Networking
+    - order: 2
+      text: A different mechanism in each environment
+      risk: yellow
+      rationale: Separate discovery mechanisms work within each environment but make connections between environments a matter of bespoke integration.
+      mitigation: Provide a common discovery mechanism that spans environments and platforms.
+      applyTags:
+      - category: Answer Key
+        tag: 'discovery: per-environment'
+      - category: Capability Signal
+        tag: Service Networking
+    - order: 3
+      text: Everything runs on one platform and its built-in discovery is enough
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'discovery: one-platform'
+    - order: 4
+      text: One discovery layer spans all environments
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'discovery: spanning-layer'
+    - order: 5
+      text: I don't know
+      risk: unknown
+      applyTags:
+      - category: Answer Key
+        tag: 'discovery: unknown'
+  - order: 2
+    text: How is traffic between applications controlled?
+    explanation: Consider what decides whether one application is allowed to call another, and whether that traffic is encrypted.
+    answers:
+    - order: 1
+      text: Mostly by network location; once inside, services can reach each other freely
+      risk: red
+      rationale: Where network location is the only control, a compromised workload can reach other services without further checks.
+      mitigation: Authorise service-to-service traffic explicitly, on the basis of service identity rather than network position.
+      applyTags:
+      - category: Answer Key
+        tag: 'service-to-service security: network-location'
+      - category: Capability Signal
+        tag: Service Networking
+      - category: Adjacent Capability Signal
+        tag: Machine Identity and Secrets
+    - order: 2
+      text: Firewall rules or address lists updated by ticket or by hand
+      risk: yellow
+      rationale: Rules tied to addresses and maintained by ticket lag behind application change and accumulate stale entries over time.
+      mitigation: Define which services may communicate in terms of service identity, and apply those rules automatically as services change.
+      applyTags:
+      - category: Answer Key
+        tag: 'service-to-service security: manual-rules'
+      - category: Capability Signal
+        tag: Service Networking
+      - category: Adjacent Capability Signal
+        tag: Machine Identity and Secrets
+    - order: 3
+      text: Each environment has its own policy mechanism, managed separately
+      risk: yellow
+      rationale: Separate policy mechanisms make it difficult to state, or verify, a single rule about which services may communicate across environments.
+      mitigation: Adopt a consistent policy model for service-to-service traffic across environments.
+      applyTags:
+      - category: Answer Key
+        tag: 'service-to-service security: per-environment'
+      - category: Capability Signal
+        tag: Service Networking
+    - order: 4
+      text: Everything runs on one platform and its built-in policies are enough
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'service-to-service security: one-platform'
+    - order: 5
+      text: Services authenticate each other and traffic is encrypted, with one set of rules per service
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'service-to-service security: service-identity'
+    - order: 6
+      text: I don't know
+      risk: unknown
+      applyTags:
+      - category: Answer Key
+        tag: 'service-to-service security: unknown'
+  - order: 3
+    text: How are application workloads deployed and run?
+    explanation: Consider how a new version of a typical application reaches production and is kept running afterwards.
+    answers:
+    - order: 1
+      text: Mostly installed and started on servers by hand or with ad-hoc scripts
+      risk: red
+      rationale: Manual and ad-hoc deployment is slow to repeat, hard to roll back and dependent on individual knowledge.
+      mitigation: Adopt a declarative, automated way of deploying and running workloads.
+      applyTags:
+      - category: Answer Key
+        tag: 'deployment: by-hand'
+      - category: Capability Signal
+        tag: Workload Lifecycle
+    - order: 2
+      text: On several platforms, each with its own deployment tooling
+      risk: yellow
+      rationale: Each platform brings its own tooling and skills, which raises operating cost and makes consistent release practice difficult.
+      mitigation: Provide a consistent deployment workflow across platforms, or reduce the number of platforms where practical.
+      applyTags:
+      - category: Answer Key
+        tag: 'deployment: per-platform'
+      - category: Capability Signal
+        tag: Workload Lifecycle
+      - category: Adjacent Capability Signal
+        tag: Service Networking
+    - order: 3
+      text: Mostly on one platform, such as Kubernetes or OpenShift, which meets our needs
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'deployment: one-platform'
+    - order: 4
+      text: On several platforms, through one consistent deployment workflow
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'deployment: one-workflow'
+    - order: 5
+      text: I don't know
+      risk: unknown
+      applyTags:
+      - category: Answer Key
+        tag: 'deployment: unknown'
+  - order: 4
+    text: How do you run workloads that don't fit your main platform, such as batch jobs, legacy applications or software that isn't containerised?
+    explanation: Examples include scheduled batch jobs, long-running legacy services and commercial software delivered as binaries.
+    answers:
+    - order: 1
+      text: On individually managed servers, by hand or with scheduled scripts
+      risk: red
+      rationale: Workloads run on individually managed servers go without automated placement and recovery, use capacity inefficiently, and tend to be left out of modernisation.
+      mitigation: Bring these workloads under a scheduler that handles placement, restarts and capacity, without requiring them to be rewritten.
+      applyTags:
+      - category: Answer Key
+        tag: 'non-standard workloads: individual-servers'
+      - category: Capability Signal
+        tag: Workload Lifecycle
+    - order: 2
+      text: On separate platforms or tools for each type
+      risk: yellow
+      rationale: A separate platform for each workload type fragments operations and leaves capacity stranded between them.
+      mitigation: Consolidate how different workload types are scheduled and operated, so that they share tooling and capacity.
+      applyTags:
+      - category: Answer Key
+        tag: 'non-standard workloads: separate-platforms'
+      - category: Capability Signal
+        tag: Workload Lifecycle
+    - order: 3
+      text: We have few or none of these
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'non-standard workloads: few'
+    - order: 4
+      text: The same platform and workflow handles them
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'non-standard workloads: same-platform'
+    - order: 5
+      text: I don't know
+      risk: unknown
+      applyTags:
+      - category: Answer Key
+        tag: 'non-standard workloads: unknown'
+thresholds:
+  red: 5
+  yellow: 12
+  unknown: 25
+riskMessages:
+  red: 'Strong signal in at least one area: a follow-up discussion is indicated'
+  yellow: 'Moderate signals: areas worth exploring further'
+  green: No deeper session indicated by this healthcheck
+  unknown: Not enough information for a clear signal

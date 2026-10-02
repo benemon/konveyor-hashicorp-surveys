@@ -1,0 +1,6 @@
+apiVersion: tackle.konveyor.io/v1alpha1
+kind: Tackle
+metadata:
+  name: tackle
+spec:
+  {{- toYaml .Values.tackle.spec | nindent 2 }}
