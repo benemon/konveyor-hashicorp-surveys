@@ -16,7 +16,7 @@ sections:
       - category: Answer Key
         tag: 'environment: one-cloud'
       - category: Questionnaire Version
-        tag: '0.3'
+        tag: '0.4'
     - order: 2
       text: Across several public clouds
       risk: green
@@ -24,7 +24,7 @@ sections:
       - category: Answer Key
         tag: 'environment: several-clouds'
       - category: Questionnaire Version
-        tag: '0.3'
+        tag: '0.4'
     - order: 3
       text: Mostly in our own data centres
       risk: green
@@ -32,7 +32,7 @@ sections:
       - category: Answer Key
         tag: 'environment: own-data-centres'
       - category: Questionnaire Version
-        tag: '0.3'
+        tag: '0.4'
     - order: 4
       text: A mix of our own data centres and public cloud
       risk: green
@@ -40,7 +40,7 @@ sections:
       - category: Answer Key
         tag: 'environment: hybrid'
       - category: Questionnaire Version
-        tag: '0.3'
+        tag: '0.4'
 - order: 2
   name: Infrastructure Delivery
   questions:
@@ -61,7 +61,7 @@ sections:
     - order: 2
       text: With scripts or automation that each team maintains for itself
       risk: yellow
-      rationale: Automation exists, but each team maintaining its own duplicates effort and leads to inconsistent controls.
+      rationale: Automation exists, but separate team-maintained approaches can duplicate effort and make consistent controls harder to maintain.
       mitigation: Bring team-specific automation into a common workflow with shared, versioned components.
       applyTags:
       - category: Answer Key
@@ -117,7 +117,7 @@ sections:
     - order: 3
       text: A central team reviews and approves changes by hand
       risk: yellow
-      rationale: Central manual approval protects standards but becomes a queue, and reviewers cannot reliably inspect every change at scale.
+      rationale: Central manual approval provides a control point, but every change depends on reviewer capacity and the process becomes harder to scale as change volume grows.
       mitigation: Automate routine policy checks so that reviewers handle exceptions and teams can self-serve within agreed guardrails.
       applyTags:
       - category: Answer Key
@@ -286,7 +286,7 @@ sections:
     - order: 2
       text: Partly automated; it varies by team or platform
       risk: yellow
-      rationale: Uneven automation leaves some services dependent on manual renewal, and those are where expiries are most likely to occur.
+      rationale: Uneven automation leaves some services dependent on manual renewal, preserving certificate-expiry risk for those services.
       mitigation: Extend automated issuance and renewal to all teams and platforms through a common service.
       applyTags:
       - category: Answer Key
@@ -328,7 +328,7 @@ sections:
     - order: 2
       text: Through a VPN that gives broad network access once connected
       risk: yellow
-      rationale: A VPN grants access to a network rather than to specific systems, so engineers can reach far more than their role requires.
+      rationale: A broad VPN grants reachability at network scope rather than per system, which makes least-privilege access harder to express and enforce consistently.
       mitigation: Move from network-level access to access granted per system on the basis of identity and role.
       applyTags:
       - category: Answer Key
@@ -376,7 +376,7 @@ sections:
     - order: 2
       text: Personal keys or passwords that each engineer manages and that rarely expire
       risk: yellow
-      rationale: Long-lived personal credentials rely on each engineer to protect and retire them, and often remain valid after a role changes.
+      rationale: Long-lived personal credentials rely on each engineer to protect them and must be explicitly retired when access requirements or roles change.
       mitigation: Tie access to the engineer's organisational identity, with credentials that are time-limited and issued when needed.
       applyTags:
       - category: Answer Key
@@ -447,7 +447,7 @@ sections:
     - order: 1
       text: Fixed addresses or host files maintained by hand
       risk: red
-      rationale: Hand-maintained addresses break when services move or scale, and every change requires coordinated manual updates.
+      rationale: Hand-maintained addresses require coordinated updates when services move or scale, making service location dependent on manual configuration.
       mitigation: Introduce a service registry so that applications locate each other by name, with health-aware records that update automatically.
       applyTags:
       - category: Answer Key
@@ -457,7 +457,7 @@ sections:
     - order: 2
       text: A different mechanism in each environment
       risk: yellow
-      rationale: Separate discovery mechanisms work within each environment but make connections between environments a matter of bespoke integration.
+      rationale: Separate discovery mechanisms create different service-location models between environments and make cross-environment dependencies harder to manage consistently where they exist.
       mitigation: Provide a common discovery mechanism that spans environments and platforms.
       applyTags:
       - category: Answer Key
@@ -489,7 +489,7 @@ sections:
     - order: 1
       text: Mostly by network location; once inside, services can reach each other freely
       risk: red
-      rationale: Where network location is the only control, a compromised workload can reach other services without further checks.
+      rationale: Where network location is the primary control, services inside that perimeter can reach one another without explicit per-service authorisation.
       mitigation: Authorise service-to-service traffic explicitly, on the basis of service identity rather than network position.
       applyTags:
       - category: Answer Key
@@ -501,7 +501,7 @@ sections:
     - order: 2
       text: Firewall rules or address lists updated by ticket or by hand
       risk: yellow
-      rationale: Rules tied to addresses and maintained by ticket lag behind application change and accumulate stale entries over time.
+      rationale: Address-based rules require manual updates as services change, creating operational delay and a risk that obsolete rules remain in place.
       mitigation: Define which services may communicate in terms of service identity, and apply those rules automatically as services change.
       applyTags:
       - category: Answer Key
@@ -555,7 +555,7 @@ sections:
     - order: 2
       text: On several platforms, each with its own deployment tooling
       risk: yellow
-      rationale: Each platform brings its own tooling and skills, which raises operating cost and makes consistent release practice difficult.
+      rationale: Each platform requires its own deployment tooling and skills, making release practices harder to standardise across the estate.
       mitigation: Provide a consistent deployment workflow across platforms, or reduce the number of platforms where practical.
       applyTags:
       - category: Answer Key

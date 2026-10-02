@@ -251,7 +251,7 @@ POINTERS = {
         "Vault": [
             ("PKI secrets engine", "issue and renew the certificates that identify workloads"),
             ("PKI roles", "define issuance policy by workload or use case"),
-            ("Short-lived certificates", "automated renewal in place of long-lived credentials"),
+            ("Short-lived certificates", "reduce credential lifetime; automated issuance and renewal make short lifetimes practical"),
         ],
     },
     "service-to-service security: manual-rules": {
@@ -267,7 +267,7 @@ POINTERS = {
         "Vault": [
             ("PKI secrets engine", "issue and renew the certificates that identify workloads"),
             ("PKI roles", "define issuance policy by workload or use case"),
-            ("Short-lived certificates", "automated renewal in place of long-lived credentials"),
+            ("Short-lived certificates", "reduce credential lifetime; automated issuance and renewal make short lifetimes practical"),
         ],
     },
     "service-to-service security: per-environment": {

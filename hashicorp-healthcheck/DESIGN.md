@@ -138,17 +138,17 @@ A pattern is a combination of answers that says something neither answer says al
 
 | Pattern | Holds when | Meaning | Areas |
 |---|---|---|---|
-| Automation stops at day one | `provisioning` is `fragmented-code` or `shared-code`, and `change and drift` is `by-hand` or `mixed` | Infrastructure is provisioned as code, but day-two changes still bypass the automated lifecycle. | IL |
-| Automated delivery without guardrails | `provisioning` is `fragmented-code` or `shared-code`, and `guardrails` is `after-the-fact` or `per-team` | Infrastructure is delivered as code, but standards are checked after deployment or team by team. | IL |
+| Day-two change escapes automation | `provisioning` is `fragmented-code` or `shared-code`, and `change and drift` is `by-hand` or `mixed` | Infrastructure is provisioned as code, but day-two changes still bypass the automated lifecycle. | IL |
+| Automated delivery with uneven guardrails | `provisioning` is `fragmented-code` or `shared-code`, and `guardrails` is `after-the-fact` or `per-team` | Infrastructure is delivered as code, but standards are checked after deployment or team by team. | IL |
 | Automated delivery with a human gate | `provisioning` is `fragmented-code` or `shared-code`, and `guardrails` is `central-approval` | Infrastructure delivery is automated, but every change still waits for a central team to approve it by hand. | IL |
-| Centralised but static | `secret storage` is `central-store`, and `rotation` is `manual-schedule` or `rarely` | Secrets are held in one central store, but credentials are long-lived or rotated by hand. | MIS |
+| Centralised secrets, manual credential lifecycle | `secret storage` is `central-store`, and `rotation` is `manual-schedule` or `rarely` | Secrets are held in one central store, but credentials are long-lived or rotated by hand. | MIS |
 | Controlled path, shared or long-lived credentials | `access path` is `brokered`, and `access credentials` is `personal-long-lived` or `shared` | Access is brokered to specific systems, but the credentials used are shared or long-lived. | MIS, HA |
 | Identity without session accountability | `access credentials` is `per-session` or `single-sign-on`, and `visibility` is `none` or `who-only` | Target access uses organisational identity or session-scoped credentials, but privileged activity cannot be fully reconstructed afterwards. | HA |
 | Trust by network location | `access path` is `direct` or `vpn`, and `service-to-service security` is `network-location` | Engineer access and traffic between services both rest on being inside the network. | HA, SN |
 | Distributed estate, fragmented control planes | `environment` is `hybrid` or `several-clouds`, and at least two of: `discovery` is `per-environment`; `service-to-service security` is `per-environment`; `deployment` is `per-platform` | Workloads span several environments, and discovery, traffic policy or deployment is done differently in each. | SN, WL |
 | Deployment is standardised, networking is not | `deployment` is `one-workflow`, and one of: `discovery` is `per-environment`; `service-to-service security` is `per-environment` | Workloads are deployed through one consistent workflow across platforms, but discovery or traffic policy still differs by environment. | SN |
 | Non-standard workloads sit outside the main platform | `deployment` is `one-platform`, and `non-standard workloads` is `individual-servers` or `separate-platforms` | The main platform meets most needs, but batch, legacy or non-containerised workloads are run by hand or on separate tooling. | WL |
-| Network rules without service identity | `service-to-service security` is `manual-rules` or `network-location`, and `certificates` is `not-used` | Traffic between services is controlled by network location or hand-maintained rules, and internal services do not commonly use certificates. | MIS, SN |
+| Network-centric controls without internal certificates | `service-to-service security` is `manual-rules` or `network-location`, and `certificates` is `not-used` | Traffic between services is controlled by network location or hand-maintained rules, and internal services do not commonly use certificates. | MIS, SN |
 | Network rules with a manual certificate lifecycle | `service-to-service security` is `manual-rules` or `network-location`, and `certificates` is `by-hand` or `partly-automated` | Traffic between services is controlled by network location or hand-maintained rules, and the certificates that could identify services are issued by hand or unevenly. | MIS, SN |
 
 A spread estate served by one platform is not a pattern: one platform can span environments.
@@ -184,14 +184,14 @@ It contains:
 
 1. a title page with the organisation and the date the readout was generated;
 2. an introduction, with a table of the environment, the areas highlighted and the areas with no signal;
-3. one section per area with a signal, in ranked order, with a row per red or yellow answer: the aspect, the answer given, and its rationale and mitigation. A section is not split across pages;
+3. one section per presented area (section 4.7), in ranked order, with a row per red or yellow answer: the aspect, the answer given, and its rationale and mitigation. A section is not split across pages. When more areas have a signal, the introduction says that three are shown;
 4. the patterns that hold;
 5. the questions answered "unknown";
-6. a next step per area, naming the product and the roles worth involving.
+6. a next step per presented area, naming the product and the roles worth involving.
 
 When no area has a signal, the introduction says so, and the summary has no next steps and makes no claim that further discussion would help.
 
-The summary names products only in its next steps. It carries no capability pointers and no talk tracks, which are for the facilitator.
+Every area with a signal remains in MTA. The summary names products only in its next steps. It carries no capability pointers and no talk tracks, which are for the facilitator.
 
 The title page uses `healthcheck-readout/cover.pdf` as its background when the file is present at build time. The file is not in the repository.
 
@@ -386,6 +386,10 @@ Personas, in `personas.yaml`: ten reference respondents, each with its answers a
 - For every persona, no area with a direct or adjacent signal is reported as having no signal.
 - For every persona, the summary says further discussion would benefit the organisation, and lists next steps, only when an area is highlighted.
 - The summary does not contain the overall result's message.
+- The summary shows exactly the presented areas: persona A has five areas with a signal and three sections and next steps.
+- The summary's metadata carries the versions in the readout it renders, not the running code's.
+- The sample readout the image build renders is accepted by the summary.
+- Single-gap matrix: from an all-green baseline, each red or yellow answer on its own gives exactly its capability's signal, its own evidence, its own adjacency and no pattern that does not involve it.
 
 | Persona | Shows |
 |---|---|
