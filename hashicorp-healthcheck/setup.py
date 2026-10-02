@@ -14,8 +14,8 @@ CLUSTER = "https://kubernetes.default.svc"
 NAMESPACE = os.environ["NAMESPACE"]
 SECRET = f"{CLUSTER}/api/v1/namespaces/{NAMESPACE}/secrets/healthcheck-console"
 BUILDS = f"{CLUSTER}/apis/build.openshift.io/v1/namespaces/{NAMESPACE}/buildconfigs"
-# Answer keys must not exist in MTA: the hub then leaves them off applications.
-UNSEEDED = "Answer Key"
+# Answer keys and the questionnaire version must not exist in MTA: the hub then leaves them off applications.
+UNSEEDED = {"Answer Key", "Questionnaire Version"}
 
 
 def call(url, authorization, method="GET", body=None, content_type="application/json", context=None):
@@ -77,7 +77,7 @@ for section in questionnaire["sections"]:
     for question in section["questions"]:
         for answer in question["answers"]:
             for tag in answer.get("applyTags", []):
-                if tag["category"] != UNSEEDED:
+                if tag["category"] not in UNSEEDED:
                     wanted.setdefault(tag["category"], set()).add(tag["tag"])
 
 existing = {c["name"]: c for c in call(f"{HUB}/tagcategories", bearer)}

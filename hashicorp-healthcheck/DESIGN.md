@@ -58,7 +58,9 @@ Every answer applies one tag in the category `Answer Key`, of the form `facet: k
 
 Sections 4.4 and 4.8 and the readout refer to answers by key, never by position, so questions and answers can be reordered or added without changing them.
 
-The `Answer Key` category is never created in MTA. The keys therefore stay off applications but remain in each assessment, which is where the readout reads them. The chart's setup job does not seed it. An assessment taken with a questionnaire that has no keys cannot be read out and must be taken again.
+Every answer to Q1 also applies a tag in the category `Questionnaire Version`, whose value is the questionnaire's version. The readout records it with each result as `questionnaire_version`, beside its own `readout_version`, so a result says which wording the answers were given under and which rules interpreted them. The readout does not reject an older questionnaire: an assessment stays interpretable while its answer keys exist.
+
+The `Answer Key` and `Questionnaire Version` categories are never created in MTA. The keys therefore stay off applications but remain in each assessment, which is where the readout reads them. The chart's setup job does not seed it. An assessment taken with a questionnaire that has no keys cannot be read out and must be taken again.
 
 ### 4.3 Direct signal
 
@@ -88,8 +90,9 @@ The cross-tag table is exhaustive.
 | Source answer | Adjacent | Justification |
 |---|---|---|
 | `access credentials: shared` | MIS | Shared credentials need issuing and rotating |
-| `service-to-service security: network-location` and `service-to-service security: manual-rules` | MIS | Service identity depends on certificate issuance |
-| `deployment: per-platform` | SN | Workloads on different platforms need common discovery and connectivity |
+| `service-to-service security: network-location` and `service-to-service security: manual-rules` | MIS | Identity-based service access requires a managed machine identity lifecycle rather than relying only on network position or addresses |
+
+Several deployment toolchains establish fragmented delivery, not a need for shared discovery or connectivity, so `deployment: per-platform` carries no adjacent tag. Q11 and Q12 supply that evidence directly, and the distributed-estate pattern combines them.
 
 ### 4.5 Solution adjacency
 
@@ -139,7 +142,7 @@ A pattern is a combination of answers that says something neither answer says al
 | Automated delivery without guardrails | `provisioning` is `fragmented-code` or `shared-code`, and `guardrails` is `after-the-fact` or `per-team` | Infrastructure is delivered as code, but standards are checked after deployment or team by team. | IL |
 | Automated delivery with a human gate | `provisioning` is `fragmented-code` or `shared-code`, and `guardrails` is `central-approval` | Infrastructure delivery is automated, but every change still waits for a central team to approve it by hand. | IL |
 | Centralised but static | `secret storage` is `central-store`, and `rotation` is `manual-schedule` or `rarely` | Secrets are held in one central store, but credentials are long-lived or rotated by hand. | MIS |
-| Controlled path, standing credentials | `access path` is `brokered`, and `access credentials` is `personal-long-lived` or `shared` | Access is brokered to specific systems, but the credentials used are shared or long-lived. | MIS, HA |
+| Controlled path, shared or long-lived credentials | `access path` is `brokered`, and `access credentials` is `personal-long-lived` or `shared` | Access is brokered to specific systems, but the credentials used are shared or long-lived. | MIS, HA |
 | Identity without session accountability | `access credentials` is `per-session` or `single-sign-on`, and `visibility` is `none` or `who-only` | Target access uses organisational identity or session-scoped credentials, but privileged activity cannot be fully reconstructed afterwards. | HA |
 | Trust by network location | `access path` is `direct` or `vpn`, and `service-to-service security` is `network-location` | Engineer access and traffic between services both rest on being inside the network. | HA, SN |
 | Distributed estate, fragmented control planes | `environment` is `hybrid` or `several-clouds`, and at least two of: `discovery` is `per-environment`; `service-to-service security` is `per-environment`; `deployment` is `per-platform` | Workloads span several environments, and discovery, traffic policy or deployment is done differently in each. | SN, WL |
@@ -164,12 +167,12 @@ The `healthcheck-readout` addon derives the readout from a completed assessment.
 
 The addon cannot read the assessment itself. The Healthcheck Console service reads it, with the message for its overall result, and submits them to the addon as the task's data.
 
-`version` in `readout.py` names the questionnaire wording and readout rules in force, and is raised when either changes. Each result carries it, because an assessment keeps the questionnaire it was answered with and a readout can be generated long after.
+`VERSION` in `readout.py` names the interpretation and rendering rules in force and is raised when they change. The questionnaire's version is raised when its wording or tags change. Each result carries both, because an assessment keeps the questionnaire it was answered with and a readout can be generated long after.
 
 Running the addon again replaces its previous output. The addon writes to the application:
 
 - an analysis with one entry per red or yellow answer, one per pattern and one per adjacent signal. Each answer is entered twice, with an effort of 1 for Issues and with none for Insights. Patterns and adjacent signals are entered for Insights only. An adjacent signal's entry is in the category `Adjacent`, names its source capabilities and says that it is not a direct finding. An application's effort is therefore its number of gaps. An entry's target technologies are the capabilities and products it relates to. Its description carries the rationale, the mitigation and the capability pointers, and for a pattern the answers behind it;
-- facts under the source `healthcheck-readout`: `version`, `environment`, `verdict`, `direct`, `areas` (every area with a signal, ranked, with its product, strength, facets and evidence), `presented`, `adjacent`, `implementation`, `patterns`, `in_good_shape`, `unknowns`, `follow_up` (topics, roles, product and talk track for each presented area) and `generated`;
+- facts under the source `healthcheck-readout`: `questionnaire_version`, `readout_version`, `environment`, `verdict`, `direct`, `areas` (every area with a signal, ranked, with its product, strength, facets and evidence), `presented`, `adjacent`, `implementation`, `patterns`, `in_good_shape`, `unknowns`, `follow_up` (topics, roles, product and talk track for each presented area) and `generated`;
 - an executive summary as a PDF, `healthcheck-summary.pdf` in the application's bucket (section 4.11);
 - one tag per capability with a direct signal, named for the product and the strength, such as `Vault: strong`. Each product has its own tag category, in the product's brand colour. The addon creates these categories on first use.
 
@@ -227,7 +230,7 @@ Q1 is context. It opens the conversation and helps the facilitator read the late
 
 | # | Answer | Key | Risk | Direct | Adjacent |
 |---|---|---|---|---|---|
-| 1 | Mostly after deployment, when a problem, audit or review identifies it | `after-the-fact` | red | IL |  |
+| 1 | Mostly after deployment, when a problem, audit or review identifies non-compliance | `after-the-fact` | red | IL |  |
 | 2 | Each team applies its own checks | `per-team` | yellow | IL |  |
 | 3 | A central team reviews and approves changes by hand | `central-approval` | yellow | IL |  |
 | 4 | Automated checks run on every change, and teams self-serve within them | `automated` | green |  |  |
@@ -334,7 +337,7 @@ This question covers certificate lifecycle where certificates exist. Whether the
 | # | Answer | Key | Risk | Direct | Adjacent |
 |---|---|---|---|---|---|
 | 1 | Mostly installed and started on servers by hand or with ad-hoc scripts | `by-hand` | red | WL |  |
-| 2 | On several platforms, each with its own deployment tooling | `per-platform` | yellow | WL | SN |
+| 2 | On several platforms, each with its own deployment tooling | `per-platform` | yellow | WL |  |
 | 3 | Mostly on one platform, such as Kubernetes or OpenShift, which meets our needs | `one-platform` | green |  |  |
 | 4 | On several platforms, through one consistent deployment workflow | `one-workflow` | green |  |  |
 | 5 | I don't know | `unknown` | unknown |  |  |
@@ -367,7 +370,8 @@ Structure of the questionnaire:
 - Each red or yellow answer applies exactly one `Capability Signal` tag, and all such answers to a question apply the same one. No other answer applies a capability tag.
 - Each scored question has at least one green answer and exactly one unknown answer. Q1 answers are all green.
 - Each capability is the direct tag of at least two questions.
-- Adjacent tags equal the cross-tag table in section 4.4.
+- Adjacent tags equal the cross-tag table in section 4.4, and each answer with one has capability pointers for the adjacent capability's product.
+- Every Q1 answer carries the same questionnaire version, and no other answer carries one.
 - Red and yellow answers have a rationale and a mitigation. Green and unknown answers have neither.
 - Every key a pattern refers to exists.
 - Capability pointers exist for exactly the red and yellow answers, and each lists its capability's own product first.

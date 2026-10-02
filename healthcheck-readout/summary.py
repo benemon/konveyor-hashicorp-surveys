@@ -56,7 +56,7 @@ def markdown(organisation, readout):
         "---",
         f"title: {json.dumps(organisation + ': 5 Minute HashiCorp Healthcheck')}",
         f"date: {json.dumps(day)}",
-        f"subject: {json.dumps('healthcheck-v' + VERSION)}",
+        f"subject: {json.dumps(f'questionnaire {readout["questionnaire_version"]}, readout {VERSION}')}",
         "lang: en-GB",
         "papersize: a4",
         'mainfont: "IBM Plex Sans"',

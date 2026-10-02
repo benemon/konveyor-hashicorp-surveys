@@ -132,7 +132,8 @@ def respondents():
                 "contact": (application.get("owner") or {}).get("name", ""),
                 "completed": application["id"] in complete,
                 "generated": facts.get("generated"),
-                "version": facts.get("version"),
+                "questionnaire_version": facts.get("questionnaire_version"),
+                "readout_version": facts.get("readout_version"),
                 "verdict": facts.get("verdict"),
                 "direct": facts.get("direct", {}),
             }
@@ -144,11 +145,11 @@ def respondents_csv():
     output = io.StringIO()
     rows = csv.writer(output)
     rows.writerow(
-        ["Organisation", "Contact", "Assessment completed", "Readout generated", "Version", "Result", *CAPABILITIES]
+        ["Organisation", "Contact", "Assessment completed", "Readout generated", "Questionnaire version", "Readout version", "Result", *CAPABILITIES]
     )
     for r in respondents():
         rows.writerow(
-            [r["organisation"], r["contact"], "yes" if r["completed"] else "no", r["generated"], r["version"], r["verdict"]]
+            [r["organisation"], r["contact"], "yes" if r["completed"] else "no", r["generated"], r["questionnaire_version"], r["readout_version"], r["verdict"]]
             + [r["direct"].get(capability, "") for capability in CAPABILITIES]
         )
     return output.getvalue().encode()

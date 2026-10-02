@@ -2,12 +2,16 @@ from pointers import POINTERS
 
 DIRECT = "Capability Signal"
 ADJACENT = "Adjacent Capability Signal"
-# Identifies the questionnaire wording and readout rules that produced a result.
-VERSION = "0.2"
+# Identifies the interpretation and rendering rules that produced a result. The questionnaire
+# has its own version, carried in the assessment.
+VERSION = "0.3"
 
 # "<facet>: <key>", one per answer. The category is never created in MTA, so the hub keeps
 # the tag in the assessment but off applications.
 KEY = "Answer Key"
+# Every answer to the first question carries the questionnaire's version in this category, which is
+# never created in MTA for the same reason.
+QUESTIONNAIRE_VERSION = "Questionnaire Version"
 
 # Order is the tie-break in DESIGN.md section 4.7.
 CAPABILITIES = [
@@ -21,9 +25,8 @@ CAPABILITIES = [
 # DESIGN.md section 4.4, by source answer key: why the answer also bears on the adjacent capability.
 ADJACENCY = {
     "access credentials: shared": "Shared credentials need issuing and rotating centrally.",
-    "service-to-service security: network-location": "Identifying services to each other depends on certificate issuance.",
-    "service-to-service security: manual-rules": "Identifying services to each other depends on certificate issuance.",
-    "deployment: per-platform": "Workloads on different platforms need common discovery and connectivity.",
+    "service-to-service security: network-location": "Identity-based service access requires a managed machine identity lifecycle rather than relying only on network position or addresses.",
+    "service-to-service security: manual-rules": "Identity-based service access requires a managed machine identity lifecycle rather than relying only on network position or addresses.",
 }
 
 # DESIGN.md section 4.8. A pattern holds when every "all" facet has one of its keys
@@ -54,7 +57,7 @@ PATTERNS = [
         "all": {"secret storage": {"central-store"}, "rotation": {"rarely", "manual-schedule"}},
     },
     {
-        "name": "Controlled path, standing credentials",
+        "name": "Controlled path, shared or long-lived credentials",
         "detail": "Access is brokered to specific systems, but the credentials used are shared or long-lived.",
         "capabilities": ["Machine Identity and Secrets", "Human Access"],
         "all": {"access path": {"brokered"}, "access credentials": {"shared", "personal-long-lived"}},
@@ -194,7 +197,7 @@ def pattern(definition, keys, texts):
 def build(sections, verdict):
     evidence = {c: [] for c in CAPABILITIES}
     keys, texts, unknowns, unclear, sources = {}, {}, [], set(), {}
-    environment = ""
+    environment = questionnaire_version = ""
     for question in (q for s in sections for q in s["questions"]):
         identities = [tags(a, KEY) for a in question["answers"]]
         if not all(len(identity) == 1 for identity in identities):
@@ -208,6 +211,7 @@ def build(sections, verdict):
         capability = next(iter(set().union(*(tags(a, DIRECT) for a in question["answers"]))), None)
         if not capability:
             environment = answer["text"] if answer else ""
+            questionnaire_version = next(iter(tags(question["answers"][0], QUESTIONNAIRE_VERSION)), "")
         elif not answer or answer["risk"] == "unknown":
             unknowns.append({"facet": facet, "question": question["text"]})
             unclear.add(capability)
@@ -249,7 +253,8 @@ def build(sections, verdict):
         implementation = {"capability": delivery, "via": in_order(direct)}
 
     return {
-        "version": VERSION,
+        "questionnaire_version": questionnaire_version,
+        "readout_version": VERSION,
         "environment": environment,
         "verdict": verdict,
         "direct": direct,

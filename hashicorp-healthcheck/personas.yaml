@@ -58,7 +58,7 @@
   adjacent:
     Machine Identity and Secrets: [Human Access]
   solution_adjacency: [Human Access]
-  patterns: ["Controlled path, standing credentials"]
+  patterns: ["Controlled path, shared or long-lived credentials"]
   overall: red
 
 - name: "G: capable platform with contradictions"
