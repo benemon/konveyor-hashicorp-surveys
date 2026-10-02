@@ -82,8 +82,8 @@ def markdown(organisation, readout):
         "Each response that highlighted an opportunity for improvement appears below under the area it "
         "belongs to, with the reason it matters and a direction for improvement.",
         "",
-        "These results have been derived from a short questionnaire. They are intended to show where "
-        "further discussions would be beneficial to you.",
+        "These results come from a short questionnaire. They show where further discussion would benefit "
+        f"{escaped(organisation)}.",
         "",
     ]
     lines += summary_table([
@@ -102,7 +102,7 @@ def markdown(organisation, readout):
             "",
             f"Signal: {area['strength']}.",
             "",
-            "| Aspect | What you told us | Why it matters, and a direction |",
+            "| **Aspect** | **Response** | **Why it matters, and a direction** |",
             AREA_COLUMNS,
         ]
         lines += [
