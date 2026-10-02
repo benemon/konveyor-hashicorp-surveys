@@ -168,7 +168,7 @@ Running the addon again replaces its previous output. The addon writes to the ap
 
 ### 4.11 Executive summary
 
-The summary is the document sent to the respondent after the session. `healthcheck-readout/summary.py` writes it from the readout as Pandoc Markdown, and the addon renders it to A4 PDF with the Eisvogel template and IBM Plex Sans.
+The summary is the document sent to the respondent after the session. `healthcheck-readout/summary.py` writes it from the readout as Pandoc Markdown, and renders it to A4 PDF with Pandoc, the Tectonic TeX engine, the Eisvogel template and IBM Plex Sans. The addon's image is built on the UBI Python image. Its build downloads those four from their GitHub releases and the TeX files the summary needs, so the addon needs no network to render.
 
 It contains:
 
@@ -403,7 +403,8 @@ healthcheck-readout/
 ├── app.py
 ├── readout.py
 ├── pointers.py
-└── summary.py
+├── summary.py
+└── fetch.py
 healthcheck-console/
 ├── Containerfile
 ├── app.py

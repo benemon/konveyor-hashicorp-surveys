@@ -1,10 +1,7 @@
 import json
 import os
-import subprocess
-import tempfile
 import urllib.request
 from datetime import datetime, timezone
-from pathlib import Path
 
 import readout
 import summary
@@ -127,17 +124,6 @@ def analysis(result):
     return (section("MAIN", [{}]) + section("INSIGHTS", insights(result)) + section("DEPS", [])).encode()
 
 
-def summary_pdf(organisation, result):
-    with tempfile.TemporaryDirectory() as directory:
-        Path(directory, "summary.md").write_text(summary.markdown(organisation, result))
-        subprocess.run(
-            ["pandoc", "summary.md", "-o", "summary.pdf", "--template", "eisvogel", "--pdf-engine", "xelatex"],
-            cwd=directory,
-            check=True,
-        )
-        return Path(directory, "summary.pdf").read_bytes()
-
-
 def run():
     task = hub("GET", f"/tasks/{TASK}")
     application = task["application"]["id"]
@@ -150,7 +136,7 @@ def run():
     upload(f"/applications/{application}/analyses", analysis(result), "application/json")
     upload(
         f"/applications/{application}/bucket/{summary.FILE}",
-        summary_pdf(task["application"]["name"], result),
+        summary.pdf(task["application"]["name"], result),
         "application/pdf",
     )
     hub(

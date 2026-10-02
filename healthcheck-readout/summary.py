@@ -1,5 +1,7 @@
 import json
 import re
+import subprocess
+import tempfile
 from datetime import datetime
 from pathlib import Path
 
@@ -8,6 +10,7 @@ from readout import FOLLOW_UP
 COVER = Path(__file__).with_name("cover.pdf")
 # Name of the summary in the application's bucket in MTA.
 FILE = "healthcheck-summary.pdf"
+TEMPLATE = "/opt/eisvogel.latex"
 
 # Pandoc sizes the columns of a pipe table from the dashes when a row is wider than the page.
 AREA_COLUMNS = "|------|------------|------------------|"
@@ -133,3 +136,15 @@ def markdown(organisation, readout):
             "to those sessions.",
         ]
     return "\n".join(lines) + "\n"
+
+
+def pdf(organisation, readout, cached=True):
+    with tempfile.TemporaryDirectory() as directory:
+        Path(directory, "summary.md").write_text(markdown(organisation, readout))
+        subprocess.run(
+            ["pandoc", "summary.md", "-o", "summary.pdf", "--template", TEMPLATE, "--pdf-engine", "tectonic"]
+            + (["--pdf-engine-opt=--only-cached"] if cached else []),
+            cwd=directory,
+            check=True,
+        )
+        return Path(directory, "summary.pdf").read_bytes()
