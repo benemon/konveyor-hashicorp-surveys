@@ -97,15 +97,17 @@ def completed():
     }
 
 
-def submit(assessment):
-    application = assessment["application"]
+def readout(organisation):
+    assessment = next((a for a in completed().values() if a["application"]["name"] == organisation), None)
+    if not assessment:
+        raise ValueError(f"organisation has no completed {HEALTHCHECK} assessment")
     # An addon token cannot read assessments, so the assessment travels as task data.
     task = hub(
         "tasks",
         {
-            "name": f"{application['name']} readout",
+            "name": f"{organisation} readout",
             "addon": ADDON,
-            "application": {"id": application["id"]},
+            "application": {"id": assessment["application"]["id"]},
             "state": "Ready",
             "data": {
                 "assessment": {
@@ -115,14 +117,7 @@ def submit(assessment):
             },
         },
     )
-    return task["id"]
-
-
-def readout(organisation):
-    assessment = next((a for a in completed().values() if a["application"]["name"] == organisation), None)
-    if not assessment:
-        raise ValueError(f"organisation has no completed {HEALTHCHECK} assessment")
-    return {"task": submit(assessment)}
+    return {"task": task["id"]}
 
 
 def respondents():
@@ -276,8 +271,6 @@ class Handler(BaseHTTPRequestHandler):
         email = str(fields.get("email", "")).strip()
         if path == self.path:
             self.reply(404, {"error": "not found"})
-        elif path == "/api/readouts" and fields.get("all") is True:
-            self.call_mta(lambda: {"tasks": [submit(a) for a in completed().values()]})
         elif path == "/api/readouts" and organisation:
             self.call_mta(lambda: readout(organisation))
         elif path == "/api/readouts":

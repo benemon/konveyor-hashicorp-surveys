@@ -382,16 +382,25 @@
     generateAll.addEventListener("click", async () => {
       generateAll.disabled = true;
       try {
-        const { tasks } = await api("readouts", { all: true });
+        const waiting = (await api("respondents")).filter((r) => r.completed);
+        const total = waiting.length;
         let succeeded = 0;
         let failed = 0;
-        report("info", `Generating ${tasks.length} readouts`);
-        await Promise.all(tasks.map(async (task) => {
-          const result = await settled(task);
-          result.state === "Succeeded" ? succeeded++ : failed++;
-          report("info", `Generating ${tasks.length} readouts: ${succeeded} succeeded, ${failed} failed`);
+        report("info", `Generating ${total} readouts`);
+        // A node limits how fast it pulls images, and each readout is a pod, so only a few run at once.
+        await Promise.all(Array.from({ length: 4 }, async () => {
+          while (waiting.length) {
+            const { organisation } = waiting.shift();
+            try {
+              const { task } = await api("readouts", { organisation });
+              (await settled(task)).state === "Succeeded" ? succeeded++ : failed++;
+            } catch {
+              failed++;
+            }
+            report("info", `Generating ${total} readouts: ${succeeded} succeeded, ${failed} failed`);
+          }
         }));
-        report(failed ? "danger" : "success", `Generated ${succeeded} of ${tasks.length} readouts, ${failed} failed`);
+        report(failed ? "danger" : "success", `Generated ${succeeded} of ${total} readouts, ${failed} failed`);
       } catch (reason) {
         report("danger", reason.message);
       } finally {

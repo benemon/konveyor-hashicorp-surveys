@@ -1,9 +1,5 @@
 {{- $questionnaire := .Files.Get "hashicorp-healthcheck/questionnaire.yaml" | fromYaml | toJson }}
 {{- $script := .Files.Get "hashicorp-healthcheck/setup.py" }}
-{{- $sources := "" }}
-{{- range $path, $_ := .Files.Glob "healthcheck-*/*" }}
-{{- $sources = print $sources $path ($.Files.Get $path | sha256sum) }}
-{{- end }}
 apiVersion: v1
 kind: Secret
 metadata:
@@ -55,9 +51,11 @@ subjects:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  # A Job's template is immutable, so a change to its inputs makes a new Job. The job
-  # starts the builds, so the build sources are among its inputs.
-  name: hashicorp-healthcheck-setup-{{ print $script $questionnaire $sources | sha256sum | trunc 8 }}
+  name: hashicorp-healthcheck-setup
+  annotations:
+    # The job starts the builds, so it runs after the release's build definitions are applied.
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation
 spec:
   backoffLimit: 3
   template:

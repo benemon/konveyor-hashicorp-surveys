@@ -43,7 +43,7 @@ Steps:
 
 3. Open the Healthcheck Console address that the install notes print.
 
-`helm upgrade` runs the setup job again when the questionnaire or the sources change, which rebuilds the images and updates the questionnaire.
+`helm upgrade` runs the setup job again, which rebuilds the images and updates the questionnaire.
 
 | Value | Default | Purpose |
 |---|---|---|
@@ -139,7 +139,7 @@ The "Maintenance" tab lists every respondent with its contact, whether its asses
 |---|---|
 | List respondents | `GET respondents` |
 | Download respondents as CSV, with each result and signal | `GET respondents.csv` |
-| Generate a readout for every completed assessment | `POST readouts` with `{"all": true}`, which returns the task ids |
+| Generate a readout for every completed assessment, four at a time | `POST readouts` for each organisation |
 | Delete one respondent | `DELETE respondents/<application id>` |
 | Delete all respondents: every application, stakeholder and readout task | `DELETE respondents` with `{"confirm": "delete all respondents"}` |
 
