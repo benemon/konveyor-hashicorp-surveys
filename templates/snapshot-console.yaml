@@ -1,0 +1,116 @@
+{{- $openshift := include "hashicorp-snapshot.openshift" . }}
+{{- $image := .Values.images.console }}
+{{- if $openshift }}
+{{- $image = printf "%s/snapshot-console:latest" (include "hashicorp-snapshot.registry" .) }}
+{{- with lookup "apps/v1" "Deployment" .Release.Namespace "snapshot-console" }}
+{{- $image = (index .spec.template.spec.containers 0).image }}
+{{- end }}
+{{- end }}
+# The setup job writes the API key into this secret.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: snapshot-console
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: snapshot-console
+  {{- if $openshift }}
+  annotations:
+    image.openshift.io/triggers: >-
+      [{"from":{"kind":"ImageStreamTag","name":"snapshot-console:latest"},
+      "fieldPath":"spec.template.spec.containers[?(@.name==\"snapshot-console\")].image"}]
+  {{- end }}
+spec:
+  selector:
+    matchLabels:
+      app: snapshot-console
+  template:
+    metadata:
+      labels:
+        app: snapshot-console
+    spec:
+      containers:
+        - name: snapshot-console
+          # On OpenShift the image trigger rewrites this field with each build's digest.
+          # Applying the live value back keeps an upgrade from conflicting with it.
+          image: {{ $image }}
+          # An image loaded into a cluster by hand cannot be pulled.
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: MTA_HUB
+              value: http://{{ .Values.appName }}-hub:8080
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /console/
+              port: 8080
+          volumeMounts:
+            - name: api-key
+              mountPath: /etc/snapshot-console
+      volumes:
+        - name: api-key
+          secret:
+            secretName: snapshot-console
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: snapshot-console
+spec:
+  selector:
+    app: snapshot-console
+  ports:
+    - port: 8080
+---
+# Served on the UI's own host, so that the page shares the browser tab's session.
+{{- if $openshift }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: snapshot-console
+spec:
+  host: {{ include "hashicorp-snapshot.host" . }}
+  path: /console
+  to:
+    kind: Service
+    name: snapshot-console
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+{{- else }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: snapshot-console
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /console
+            pathType: Prefix
+            backend:
+              service:
+                name: snapshot-console
+                port:
+                  number: 8080
+      {{- with .Values.host }}
+      host: {{ . }}
+      {{- end }}
+{{- end }}
+---
+# The operator denies ingress to every pod in the namespace by default.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: snapshot-console
+spec:
+  podSelector:
+    matchLabels:
+      app: snapshot-console
+  ingress:
+    - ports:
+        - port: 8080

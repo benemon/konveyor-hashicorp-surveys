@@ -1,0 +1,10 @@
+The setup job waits for the hub, mints an API key, seeds the tag categories and imports the questionnaire.
+On OpenShift it also starts the two image builds.
+
+  kubectl -n {{ .Release.Namespace }} get jobs
+
+{{ if include "hashicorp-snapshot.openshift" . -}}
+Snapshot Console: https://{{ include "hashicorp-snapshot.host" . }}/console/
+{{- else -}}
+Snapshot Console: /console/ on the UI's address.
+{{- end }}

@@ -1,0 +1,4 @@
+apiVersion: v2
+name: hashicorp-snapshot
+description: The HashiCorp Snapshot questionnaire, its readout addon and the Snapshot Console service, on an MTA or Konveyor instance.
+version: 0.1.0

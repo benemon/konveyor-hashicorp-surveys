@@ -13,64 +13,84 @@ Validated against Migration Toolkit for Applications (MTA) 8.3.0. The design is 
 ## Components
 
 - `hashicorp-snapshot/`: the questionnaire, its tests and its design.
-- `survey-bootstrap/`: a small Python service served on MTA's own host at `/bootstrap/`. Its page starts an assessment from an organisation and a contact email, and generates readouts. Sharing MTA's host keeps a logged-in browser tab logged in when the page sends it on to the questionnaire.
+- `snapshot-console/`: a small Python service served on MTA's own host at `/console/`. Its page starts an assessment from an organisation and a contact email, and generates readouts. Sharing MTA's host keeps a logged-in browser tab logged in when the page sends it on to the questionnaire.
 - `snapshot-readout/`: an MTA addon. It derives the readout from a completed assessment and writes it to the application as Issues, Insights, facts and product tags. Running it again replaces its previous output.
 
-## Install
+## Install on OpenShift
+
+The repository root is a Helm chart. It takes a namespace that holds only the MTA or Konveyor operator to a working environment: the instance, the questionnaire and its tags, Snapshot Console on the UI's host and the readout addon.
 
 Prerequisites:
 
-- `oc`, logged in with rights to create builds, deployments, routes, network policies and addons in the `openshift-mta` project.
-- An MTA API key with administrator rights, and MTA's URL:
-
-  ```sh
-  export MTA_ENDPOINT=https://mta.example.com
-  export MTA_ADMIN_TOKEN=...
-  ```
-
-- Python 3 with PyYAML (`pip install pyyaml`) for `seed_tags.py` and the tests.
+- An OpenShift cluster with the MTA or Konveyor operator installed in the target namespace, and no instance in it.
+- `oc` and `helm`, logged in with rights to create the resources in `templates/` in that namespace.
 
 Steps:
 
-1. Seed the tag categories. This comes before the import: see [design section 3](hashicorp-snapshot/DESIGN.md#3-mta-behaviour-the-design-depends-on). The script creates only what is missing.
+1. Install the chart:
 
    ```sh
-   python3 hashicorp-snapshot/seed_tags.py
+   helm install hashicorp-snapshot . -n openshift-mta
    ```
 
-   If MTA's certificate is issued by a private CA, point `SSL_CERT_FILE` at the CA bundle.
-
-2. Import the questionnaire, through the questionnaire import in the MTA administration view or with:
+2. Wait for the setup job and the two builds to complete:
 
    ```sh
-   curl -X POST "$MTA_ENDPOINT/hub/questionnaires" \
-     -H "Authorization: Bearer $MTA_ADMIN_TOKEN" \
-     -H "Content-Type: application/x-yaml" \
-     --data-binary @hashicorp-snapshot/questionnaire.yaml
+   oc -n openshift-mta get jobs,builds
    ```
 
-3. Deploy Survey Bootstrap, giving its route MTA's host name, and build its image on the cluster:
+   The setup job waits for the hub, starts the builds, mints the service's API key, seeds the tag categories and imports the questionnaire.
 
-   ```sh
-   oc -n openshift-mta create secret generic survey-bootstrap --from-literal=api-key="$MTA_ADMIN_TOKEN"
-   oc kustomize survey-bootstrap/ | sed "s/mta.example.com/<MTA host>/" | oc apply -f -
-   oc -n openshift-mta start-build survey-bootstrap --from-dir=survey-bootstrap/ --follow
-   ```
+3. Open the Snapshot Console address that the install notes print.
 
-   The Deployment rolls out each new build. `MTA_HUB` is the hub's in-cluster address. `MTA_API_KEY` is read from the `survey-bootstrap` secret.
+`helm upgrade` runs the setup job again when the questionnaire or the sources change, which rebuilds the images and updates the questionnaire.
 
-4. Register the readout addon and build its image:
+| Value | Default | Purpose |
+|---|---|---|
+| `appName` | `mta` | The operator's application name. The hub service is `<appName>-hub` and the UI route is `<appName>`. Upstream Konveyor uses `tackle`. |
+| `tackle.spec` | `{}` | Spec of the instance the operator creates. |
+| `admin.username`, `admin.password` | `admin`, `admin` | A hub login allowed to create API keys. Used once, to mint the key Snapshot Console uses. |
+| `host` | the UI route's host | Host of the Snapshot Console route. |
+| `pythonImage` | `registry.access.redhat.com/ubi9/python-312-minimal` | Base image for the setup job and the builds. |
+| `images.console`, `images.readout` | `localhost/snapshot-console:latest`, `localhost/snapshot-readout:latest` | The two images on a cluster without OpenShift builds. |
 
-   ```sh
-   oc apply -k snapshot-readout/
-   oc -n openshift-mta start-build snapshot-readout --from-dir=snapshot-readout/ --follow
-   ```
+Snapshot Console has no login of its own and acts on MTA with its API key. Anyone who can reach MTA's host can list organisation names, start assessments, generate readouts and read their summaries. Expose it only on a trusted network.
 
-Survey Bootstrap has no login of its own and acts on MTA with the API key. Anyone who can reach MTA's host can list organisation names, start assessments, generate readouts and read their summaries. Expose it only on a trusted network.
+## Run locally on kind
+
+Two Ansible playbooks stand the whole environment up on a laptop, with upstream Konveyor, and remove it again. Once it is up it needs no network connection.
+
+Prerequisites: `podman` with a machine of at least 6 GB of memory, `kind`, `helm`, `git` and `ansible` with the collections in `kind/requirements.yml`.
+
+```sh
+ansible-galaxy collection install -r kind/requirements.yml
+ansible-playbook kind/up.yml
+```
+
+The playbook creates a kind cluster, installs an ingress controller and the Konveyor operator, builds the two images from their Containerfiles and loads them into the cluster, installs this chart and waits until Snapshot Console can reach Konveyor. It ends by listing each address with the ingress and service behind it, and the in-cluster service names. On a cluster without OpenShift builds the chart uses those images and an Ingress in place of the builds and the Route.
+
+- Konveyor: `https://localhost:8443/`
+- Snapshot Console: `https://localhost:8443/console/`
+- Kubeconfig: `kind/kubeconfig`
+
+Upstream Konveyor does not require a login by default.
+
+After a restart of the laptop, start the podman machine and then the cluster's container:
+
+```sh
+podman machine start
+podman start snapshot-control-plane
+```
+
+To remove the cluster, its kubeconfig and the two local images:
+
+```sh
+ansible-playbook kind/down.yml
+```
 
 ## Run an assessment
 
-1. In a browser tab that is logged in to MTA, open `/bootstrap/` on MTA's host.
+1. In a browser tab that is logged in to MTA, open `/console/` on MTA's host. Upstream Konveyor on kind needs no login.
 2. On "Start an assessment", enter the organisation and a contact email. The service creates the stakeholder, the application (named for the organisation) and the assessment, and opens the questionnaire. An organisation that already exists reopens its assessment.
 3. Complete the questionnaire.
 4. On "Generate a readout", choose the organisation. The tab reports what was stored: the verdict, each indicated product with its strength, the number of issues and the patterns.
@@ -78,12 +98,12 @@ Survey Bootstrap has no login of its own and acts on MTA with the API key. Anyon
 
 ## API
 
-The page and any other client use the same API, under `/bootstrap/api/`.
+The page and any other client use the same API, under `/console/api/`.
 
 Start an assessment:
 
 ```sh
-curl -X POST "$MTA_ENDPOINT/bootstrap/api/assessments" \
+curl -X POST "https://<MTA host>/console/api/assessments" \
   -H 'Content-Type: application/json' \
   -d '{"organisation": "Example Ltd", "email": "contact@example.com"}'
 ```
@@ -93,10 +113,10 @@ The response gives the application and assessment ids and the assessment's path 
 Generate a readout for an organisation with a completed assessment:
 
 ```sh
-curl -X POST "$MTA_ENDPOINT/bootstrap/api/readouts" \
+curl -X POST "https://<MTA host>/console/api/readouts" \
   -H 'Content-Type: application/json' \
   -d '{"organisation": "Example Ltd"}'
-curl "$MTA_ENDPOINT/bootstrap/api/readouts/<task id>"
+curl "https://<MTA host>/console/api/readouts/<task id>"
 ```
 
 The first call returns the task id. The second gives the task's state and, once it has succeeded, what was stored in MTA. `GET organisations` lists the organisations in MTA.
@@ -107,7 +127,7 @@ The first call returns the task id. The second gives the task's state and, once 
 cd hashicorp-snapshot && python3 -m unittest
 ```
 
-The tests check the questionnaire's structure against the design and run the reference respondents in `personas.yaml` through the addon's readout logic. They do not need an MTA instance.
+The tests check the questionnaire's structure against the design and run the reference respondents in `personas.yaml` through the addon's readout logic. They do not need an MTA instance. They need Python 3 with PyYAML (`pip install pyyaml`).
 
 ## Links
 

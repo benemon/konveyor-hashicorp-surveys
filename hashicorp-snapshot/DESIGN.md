@@ -36,6 +36,7 @@ Verified on Migration Toolkit for Applications (MTA) 8.3.0, the Red Hat build of
 - An application has at most one assessment per questionnaire.
 - An analysis entry with an effort appears under Issues. One without appears under Insights. An entry's description is rendered as Markdown, and its target technologies come from its labels.
 - An addon's task token cannot read assessments.
+- The hub mints an API key for a login presented with basic authentication. Upstream Konveyor does not require authentication by default, and then ignores the key.
 - The UI keeps its login per browser tab and per host.
 
 ## 4. Signal model
@@ -57,7 +58,7 @@ Every answer applies one tag in the category `Answer Key`, of the form `facet: k
 
 Sections 4.4 and 4.8 and the readout refer to answers by key, never by position, so questions and answers can be reordered or added without changing them.
 
-The `Answer Key` category is never created in MTA. The keys therefore stay off applications but remain in each assessment, which is where the readout reads them. `seed_tags.py` skips the category. An assessment taken with a questionnaire that has no keys cannot be read out and must be taken again.
+The `Answer Key` category is never created in MTA. The keys therefore stay off applications but remain in each assessment, which is where the readout reads them. The chart's setup job does not seed it. An assessment taken with a questionnaire that has no keys cannot be read out and must be taken again.
 
 ### 4.3 Direct signal
 
@@ -156,7 +157,7 @@ Pointers are never part of the questionnaire. Its mitigation text stays product-
 
 The `snapshot-readout` addon derives the readout from a completed assessment. `snapshot-readout/readout.py` is the single implementation of sections 4.3 to 4.5 and 4.7 to 4.9. The overall result (4.6) is MTA's own.
 
-The addon cannot read the assessment itself. The Survey Bootstrap service reads it, with the message for its overall result, and submits them to the addon as the task's data.
+The addon cannot read the assessment itself. The Snapshot Console service reads it, with the message for its overall result, and submits them to the addon as the task's data.
 
 Running the addon again replaces its previous output. The addon writes to the application:
 
@@ -365,26 +366,37 @@ Personas, in `personas.yaml`: nine reference respondents, each with its answers 
 
 ## 7. Repository layout
 
+The repository root is a Helm chart, so that the chart can package the sources below.
+
 ```text
 README.md
+Chart.yaml
+values.yaml
+templates/
 hashicorp-snapshot/
 ├── DESIGN.md
 ├── questionnaire.yaml
-├── seed_tags.py
+├── setup.py
 ├── personas.yaml
 └── test_questionnaire.py
 snapshot-readout/
-├── addon.yaml
-├── kustomization.yaml
+├── Containerfile
 ├── app.py
 ├── readout.py
 └── pointers.py
-survey-bootstrap/
-├── deployment.yaml
-├── kustomization.yaml
+snapshot-console/
+├── Containerfile
 ├── app.py
 └── index.html
+kind/
+├── cluster.yaml
+├── up.yml
+└── down.yml
 ```
+
+On OpenShift the chart builds the two images on the cluster from their Containerfiles. Elsewhere they are built locally; `kind/` holds the playbooks that do so for a kind cluster.
+
+`setup.py` runs as the chart's setup job: on OpenShift it starts the image builds, and everywhere it mints the service's API key, seeds the signal tag categories and imports the questionnaire.
 
 ## 8. Out of scope
 

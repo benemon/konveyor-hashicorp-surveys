@@ -6,11 +6,13 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 MTA_HUB = os.environ["MTA_HUB"].rstrip("/")
-MTA_API_KEY = os.environ["MTA_API_KEY"]
+# Written by the chart's setup job after the pod may already be running, so it is read per call.
+API_KEY = Path("/etc/snapshot-console/api-key")
 INDEX = (Path(__file__).parent / "index.html").read_bytes()
+STYLES = (Path(__file__).parent / "patternfly.min.css").read_bytes()
 # The route serves this path on MTA's own host, so links into MTA are same-origin and
 # keep the browser tab's MTA session.
-PREFIX = "/bootstrap"
+PREFIX = "/console"
 ADDON = "snapshot-readout"
 # The questionnaire the readout addon understands.
 SNAPSHOT = "HashiCorp Snapshot"
@@ -21,7 +23,7 @@ def hub(path, body=None):
         f"{MTA_HUB}/{path}",
         data=json.dumps(body).encode() if body else None,
         headers={
-            "Authorization": f"Bearer {MTA_API_KEY}",
+            "Authorization": f"Bearer {API_KEY.read_text()}",
             "Content-Type": "application/json",
             "Accept": "application/json",
         },
@@ -149,8 +151,8 @@ class Handler(BaseHTTPRequestHandler):
         except urllib.error.HTTPError as reason:
             # The hub echoes the bearer token in its 401 body, so the body is not relayed.
             self.reply(502, {"error": f"MTA returned {reason.code}"})
-        except urllib.error.URLError:
-            self.reply(502, {"error": "MTA is unreachable"})
+        except (urllib.error.URLError, FileNotFoundError):
+            self.reply(502, {"error": "MTA is unreachable or the service has no API key yet"})
 
     def do_GET(self):
         path = self.path.removeprefix(PREFIX)
@@ -163,6 +165,8 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(404, {"error": "not found"})
         elif path == "/":
             self.reply(200, INDEX, "text/html; charset=utf-8")
+        elif path == "/patternfly.min.css":
+            self.reply(200, STYLES, "text/css")
         elif path == "/api/questionnaires":
             self.call_mta(lambda: [q["name"] for q in questionnaires()])
         elif path == "/api/organisations":

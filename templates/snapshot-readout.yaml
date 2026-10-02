@@ -1,0 +1,16 @@
+apiVersion: tackle.konveyor.io/v1alpha1
+kind: Addon
+metadata:
+  name: snapshot-readout
+spec:
+  container:
+    name: addon
+    {{- if include "hashicorp-snapshot.openshift" . }}
+    image: {{ include "hashicorp-snapshot.registry" . }}/snapshot-readout:latest
+    # The hub defaults this to IfNotPresent, which would keep running a stale :latest image.
+    imagePullPolicy: Always
+    {{- else }}
+    image: {{ .Values.images.readout }}
+    # An image loaded into a cluster by hand cannot be pulled.
+    imagePullPolicy: IfNotPresent
+    {{- end }}

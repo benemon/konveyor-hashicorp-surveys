@@ -1,0 +1,4 @@
+.git/
+house-review-*.md
+__pycache__/
+kind/

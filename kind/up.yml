@@ -1,0 +1,196 @@
+- name: Stand up HashiCorp Snapshot on upstream Konveyor in a kind cluster
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    cluster: snapshot
+    namespace: konveyor-tackle
+    kubeconfig: "{{ playbook_dir }}/kubeconfig"
+    konveyor_version: v0.11.0
+    images:
+      - snapshot-console
+      - snapshot-readout
+  environment:
+    KIND_EXPERIMENTAL_PROVIDER: podman
+  module_defaults:
+    group/kubernetes.core.k8s:
+      kubeconfig: "{{ kubeconfig }}"
+    kubernetes.core.helm:
+      kubeconfig: "{{ kubeconfig }}"
+  tasks:
+    - name: List kind clusters
+      ansible.builtin.command: kind get clusters
+      register: clusters
+      changed_when: false
+
+    - name: Create the kind cluster
+      ansible.builtin.command: >-
+        kind create cluster --name {{ cluster }}
+        --config {{ playbook_dir }}/cluster.yaml --kubeconfig {{ kubeconfig }}
+      when: cluster not in clusters.stdout_lines
+
+    - name: Install the ingress controller
+      kubernetes.core.k8s:
+        src: https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.12.1/deploy/static/provider/kind/deploy.yaml
+        state: present
+
+    # Its admission webhook must be serving before the chart's Ingress can be created.
+    - name: Wait for the ingress controller
+      kubernetes.core.k8s_info:
+        kind: Pod
+        namespace: ingress-nginx
+        label_selectors:
+          - app.kubernetes.io/component=controller
+        wait: true
+        wait_condition:
+          type: Ready
+        wait_timeout: 300
+
+    # The Konveyor operator removes OLM resources during reconciliation and fails without their types.
+    - name: Install the OLM resource definitions
+      kubernetes.core.k8s:
+        src: https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.32.0/crds.yaml
+        state: present
+        apply: true
+        server_side_apply:
+          field_manager: ansible
+
+    - name: Create a directory for the Konveyor operator chart
+      ansible.builtin.tempfile:
+        state: directory
+      register: operator_source
+
+    - name: Fetch the Konveyor operator chart
+      ansible.builtin.git:
+        repo: https://github.com/konveyor/operator
+        version: "{{ konveyor_version }}"
+        dest: "{{ operator_source.path }}"
+        depth: 1
+
+    - name: Install the Konveyor operator
+      kubernetes.core.helm:
+        name: konveyor-operator
+        chart_ref: "{{ operator_source.path }}/helm"
+        release_namespace: "{{ namespace }}"
+        create_namespace: true
+        wait: true
+        values:
+          images:
+            operator: "quay.io/konveyor/tackle2-operator:{{ konveyor_version }}"
+            tackle_hub: "quay.io/konveyor/tackle2-hub:{{ konveyor_version }}"
+            tackle_ui: "quay.io/konveyor/tackle2-ui:{{ konveyor_version }}"
+
+    - name: Remove the fetched operator chart
+      ansible.builtin.file:
+        path: "{{ operator_source.path }}"
+        state: absent
+
+    - name: Build the images
+      containers.podman.podman_image:
+        name: "localhost/{{ item }}"
+        path: "{{ playbook_dir }}/../{{ item }}"
+        force: true
+      loop: "{{ images }}"
+
+    - name: Create a directory for the image archives
+      ansible.builtin.tempfile:
+        state: directory
+      register: archives
+
+    - name: Save the images
+      containers.podman.podman_save:
+        image: "localhost/{{ item }}:latest"
+        dest: "{{ archives.path }}/{{ item }}.tar"
+      loop: "{{ images }}"
+
+    # Loaded before the chart is installed: a pod that asks for an image the node does not
+    # have yet puts the image name into a pull back-off.
+    - name: Load the images into the cluster
+      ansible.builtin.command: >-
+        kind load image-archive {{ archives.path }}/{{ item }}.tar --name {{ cluster }}
+      loop: "{{ images }}"
+
+    - name: Remove the image archives
+      ansible.builtin.file:
+        path: "{{ archives.path }}"
+        state: absent
+
+    - name: Install the HashiCorp Snapshot chart
+      kubernetes.core.helm:
+        name: hashicorp-snapshot
+        chart_ref: "{{ playbook_dir }}/.."
+        release_namespace: "{{ namespace }}"
+        values:
+          appName: tackle
+
+    - name: Wait for the setup job
+      kubernetes.core.k8s_info:
+        kind: Job
+        namespace: "{{ namespace }}"
+        wait: true
+        wait_condition:
+          type: Complete
+        wait_timeout: 900
+
+    - name: Wait for Snapshot Console
+      kubernetes.core.k8s_info:
+        kind: Deployment
+        namespace: "{{ namespace }}"
+        name: snapshot-console
+        wait: true
+        wait_condition:
+          type: Available
+        wait_timeout: 300
+
+    # The API key reaches the pod's mounted secret a short while after the setup job stores it.
+    - name: Wait for Snapshot Console to reach Konveyor
+      ansible.builtin.uri:
+        url: https://localhost:8443/console/api/questionnaires
+        validate_certs: false
+      register: console
+      until: console.status == 200
+      retries: 30
+      delay: 5
+
+    - name: Read the ingresses
+      kubernetes.core.k8s_info:
+        kind: Ingress
+        namespace: "{{ namespace }}"
+      register: ingresses
+
+    - name: Read the services
+      kubernetes.core.k8s_info:
+        kind: Service
+        namespace: "{{ namespace }}"
+      register: services
+
+    # cluster.yaml maps host port 8443 to the ingress controller's port 443.
+    - name: Show the endpoints
+      ansible.builtin.debug:
+        msg:
+          from_this_machine: "{{ external }}"
+          inside_the_cluster: "{{ internal }}"
+      vars:
+        external: >-
+          {%- set found = [] -%}
+          {%- for ingress in ingresses.resources -%}
+          {%- for rule in ingress.spec.rules -%}
+          {%- for path in rule.http.paths -%}
+          {%- set _ = found.append(
+            'https://' ~ (rule.host | default('localhost')) ~ ':8443' ~ path.path
+            ~ ' -> ingress ' ~ ingress.metadata.name
+            ~ ' (class ' ~ ingress.spec.ingressClassName ~ ', host ' ~ (rule.host | default('any')) ~ ')'
+            ~ ' -> service ' ~ path.backend.service.name ~ ':' ~ path.backend.service.port.number) -%}
+          {%- endfor -%}
+          {%- endfor -%}
+          {%- endfor -%}
+          {{ found }}
+        internal: >-
+          {%- set found = [] -%}
+          {%- for service in services.resources -%}
+          {%- for port in service.spec.ports -%}
+          {%- set _ = found.append(
+            service.metadata.name ~ '.' ~ namespace ~ '.svc.cluster.local:' ~ port.port) -%}
+          {%- endfor -%}
+          {%- endfor -%}
+          {{ found }}
