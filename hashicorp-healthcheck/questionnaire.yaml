@@ -15,24 +15,32 @@ sections:
       applyTags:
       - category: Answer Key
         tag: 'environment: one-cloud'
+      - category: Questionnaire Version
+        tag: '0.3'
     - order: 2
       text: Across several public clouds
       risk: green
       applyTags:
       - category: Answer Key
         tag: 'environment: several-clouds'
+      - category: Questionnaire Version
+        tag: '0.3'
     - order: 3
       text: Mostly in our own data centres
       risk: green
       applyTags:
       - category: Answer Key
         tag: 'environment: own-data-centres'
+      - category: Questionnaire Version
+        tag: '0.3'
     - order: 4
       text: A mix of our own data centres and public cloud
       risk: green
       applyTags:
       - category: Answer Key
         tag: 'environment: hybrid'
+      - category: Questionnaire Version
+        tag: '0.3'
 - order: 2
   name: Infrastructure Delivery
   questions:
@@ -87,7 +95,7 @@ sections:
     explanation: Standards include security rules, cost limits, naming and approved configurations. Choose how they are usually checked when infrastructure is created or changed.
     answers:
     - order: 1
-      text: Mostly after deployment, when a problem, audit or review identifies it
+      text: Mostly after deployment, when a problem, audit or review identifies non-compliance
       risk: red
       rationale: Standards checked after deployment allow non-compliant infrastructure to reach production and make remediation expensive.
       mitigation: Express standards as automated checks that run before infrastructure changes are applied.
@@ -554,8 +562,6 @@ sections:
         tag: 'deployment: per-platform'
       - category: Capability Signal
         tag: Workload Lifecycle
-      - category: Adjacent Capability Signal
-        tag: Service Networking
     - order: 3
       text: Mostly on one platform, such as Kubernetes or OpenShift, which meets our needs
       risk: green

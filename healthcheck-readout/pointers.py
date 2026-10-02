@@ -248,6 +248,11 @@ POINTERS = {
             ("Intentions", "explicitly allow or deny communication by service identity, not IP or location"),
             ("Transparent proxy", "where applications should adopt the mesh without code changes"),
         ],
+        "Vault": [
+            ("PKI secrets engine", "issue and renew the certificates that identify workloads"),
+            ("PKI roles", "define issuance policy by workload or use case"),
+            ("Short-lived certificates", "automated renewal in place of long-lived credentials"),
+        ],
     },
     "service-to-service security: manual-rules": {
         "Consul": [
@@ -258,6 +263,11 @@ POINTERS = {
                 "Central policy configuration",
                 "decouple policy from individual IP addresses and firewall tickets",
             ),
+        ],
+        "Vault": [
+            ("PKI secrets engine", "issue and renew the certificates that identify workloads"),
+            ("PKI roles", "define issuance policy by workload or use case"),
+            ("Short-lived certificates", "automated renewal in place of long-lived credentials"),
         ],
     },
     "service-to-service security: per-environment": {

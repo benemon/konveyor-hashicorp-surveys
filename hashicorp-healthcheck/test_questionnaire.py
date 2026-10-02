@@ -12,7 +12,7 @@ HERE = Path(__file__).parent
 sys.path.insert(0, str(HERE.parent / "healthcheck-readout"))
 import readout  # noqa: E402
 import summary  # noqa: E402
-from readout import ADJACENCY, ADJACENT, CAPABILITIES, DIRECT, KEY, tags  # noqa: E402
+from readout import ADJACENCY, ADJACENT, CAPABILITIES, DIRECT, FOLLOW_UP, KEY, QUESTIONNAIRE_VERSION, tags  # noqa: E402
 
 QUESTIONNAIRE = yaml.safe_load((HERE / "questionnaire.yaml").read_text())
 PERSONAS = yaml.safe_load((HERE / "personas.yaml").read_text())
@@ -24,7 +24,6 @@ CROSS_TAGS = {
     "access credentials: shared": {"Machine Identity and Secrets"},
     "service-to-service security: network-location": {"Machine Identity and Secrets"},
     "service-to-service security: manual-rules": {"Machine Identity and Secrets"},
-    "deployment: per-platform": {"Service Networking"},
 }
 
 PRODUCTS = re.compile(r"terraform|vault|boundary|consul|nomad|hashicorp", re.IGNORECASE)
@@ -89,9 +88,17 @@ class Structure(unittest.TestCase):
                     self.assertTrue(answer["text"])
                     self.assertIn(answer["risk"], {"red", "yellow", "green", "unknown"})
                     for tag in answer.get("applyTags", []):
-                        self.assertIn(tag["category"], {DIRECT, ADJACENT, KEY})
-                        if tag["category"] != KEY:
+                        self.assertIn(tag["category"], {DIRECT, ADJACENT, KEY, QUESTIONNAIRE_VERSION})
+                        if tag["category"] in (DIRECT, ADJACENT):
                             self.assertIn(tag["tag"], CAPABILITIES)
+
+    def test_context_question_carries_the_questionnaire_version(self):
+        versions = {next(iter(tags(a, QUESTIONNAIRE_VERSION)), None) for a in CONTEXT["answers"]}
+        self.assertEqual(len(versions), 1)
+        self.assertIsNotNone(next(iter(versions)))
+        for question in SCORED:
+            for answer in question["answers"]:
+                self.assertFalse(tags(answer, QUESTIONNAIRE_VERSION))
 
     def test_question_and_answer_counts(self):
         self.assertTrue(14 <= len(QUESTIONS) <= 16, len(QUESTIONS))
@@ -164,6 +171,9 @@ class Structure(unittest.TestCase):
         }
         self.assertEqual(found, CROSS_TAGS)
         self.assertEqual(set(ADJACENCY), set(CROSS_TAGS))
+        for key, adjacent in CROSS_TAGS.items():
+            for capability in adjacent:
+                self.assertIn(FOLLOW_UP[capability]["product"], readout.POINTERS[key], key)
 
     def test_rationale_and_mitigation(self):
         for question in QUESTIONS:
