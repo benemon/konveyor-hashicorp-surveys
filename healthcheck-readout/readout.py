@@ -2,6 +2,9 @@ from pointers import POINTERS
 
 DIRECT = "Capability Signal"
 ADJACENT = "Adjacent Capability Signal"
+# Identifies the questionnaire wording and readout rules that produced a result.
+VERSION = "0.2"
+
 # "<facet>: <key>", one per answer. The category is never created in MTA, so the hub keeps
 # the tag in the assessment but off applications.
 KEY = "Answer Key"
@@ -15,18 +18,26 @@ CAPABILITIES = [
     "Workload Lifecycle",
 ]
 
+# DESIGN.md section 4.4, by source answer key: why the answer also bears on the adjacent capability.
+ADJACENCY = {
+    "access credentials: shared": "Shared credentials need issuing and rotating centrally.",
+    "service-to-service security: network-location": "Identifying services to each other depends on certificate issuance.",
+    "service-to-service security: manual-rules": "Identifying services to each other depends on certificate issuance.",
+    "deployment: per-platform": "Workloads on different platforms need common discovery and connectivity.",
+}
+
 # DESIGN.md section 4.8. A pattern holds when every "all" facet has one of its keys
 # and, if "any" is present, at least "at_least" of those do (one when not given).
 PATTERNS = [
     {
         "name": "Automation stops at day one",
-        "detail": "Infrastructure is provisioned as code, but later changes are made by hand.",
+        "detail": "Infrastructure is provisioned as code, but day-two changes still bypass the automated lifecycle.",
         "capabilities": ["Infrastructure Lifecycle"],
         "all": {"provisioning": {"fragmented-code", "shared-code"}, "change and drift": {"by-hand", "mixed"}},
     },
     {
         "name": "Automated delivery without guardrails",
-        "detail": "Infrastructure is delivered as code, but standards are checked by hand or team by team.",
+        "detail": "Infrastructure is delivered as code, but standards are checked after deployment or team by team.",
         "capabilities": ["Infrastructure Lifecycle"],
         "all": {"provisioning": {"fragmented-code", "shared-code"}, "guardrails": {"after-the-fact", "per-team"}},
     },
@@ -43,14 +54,14 @@ PATTERNS = [
         "all": {"secret storage": {"central-store"}, "rotation": {"rarely", "manual-schedule"}},
     },
     {
-        "name": "Controlled path, uncontrolled credentials",
+        "name": "Controlled path, standing credentials",
         "detail": "Access is brokered to specific systems, but the credentials used are shared or long-lived.",
         "capabilities": ["Machine Identity and Secrets", "Human Access"],
         "all": {"access path": {"brokered"}, "access credentials": {"shared", "personal-long-lived"}},
     },
     {
         "name": "Identity without session accountability",
-        "detail": "Access is tied to an individual or issued per session, but what was done in a session cannot be fully shown afterwards.",
+        "detail": "Target access uses organisational identity or session-scoped credentials, but privileged activity cannot be fully reconstructed afterwards.",
         "capabilities": ["Human Access"],
         "all": {"access credentials": {"single-sign-on", "per-session"}, "visibility": {"none", "who-only"}},
     },
@@ -87,11 +98,20 @@ PATTERNS = [
     },
     {
         "name": "Network rules without service identity",
-        "detail": "Traffic between services is controlled by network location or hand-maintained rules, and certificate-based service identity is absent, uneven or manual.",
+        "detail": "Traffic between services is controlled by network location or hand-maintained rules, and internal services do not commonly use certificates.",
         "capabilities": ["Machine Identity and Secrets", "Service Networking"],
         "all": {
             "service-to-service security": {"network-location", "manual-rules"},
-            "certificates": {"by-hand", "partly-automated", "not-used"},
+            "certificates": {"not-used"},
+        },
+    },
+    {
+        "name": "Network rules with a manual certificate lifecycle",
+        "detail": "Traffic between services is controlled by network location or hand-maintained rules, and the certificates that could identify services are issued by hand or unevenly.",
+        "capabilities": ["Machine Identity and Secrets", "Service Networking"],
+        "all": {
+            "service-to-service security": {"network-location", "manual-rules"},
+            "certificates": {"by-hand", "partly-automated"},
         },
     },
 ]
@@ -205,17 +225,23 @@ def build(sections, verdict):
                 }
             )
             for adjacent in tags(answer, ADJACENT):
-                sources.setdefault(adjacent, set()).add(capability)
+                sources.setdefault(adjacent, []).append(
+                    {"capability": capability, "facet": facet, "answer": answer["text"], "note": ADJACENCY[key]}
+                )
 
     reds = {c: sum(e["risk"] == "red" for e in evidence[c]) for c in CAPABILITIES}
     direct = {c: "strong" if reds[c] else "moderate" for c in CAPABILITIES if evidence[c]}
     ranked = sorted(direct, key=lambda c: (direct[c] != "strong", -reds[c], -len(evidence[c])))
 
-    candidates = {c: in_order(s) for c, s in sources.items() if c not in direct}
-    adjacent = None
-    if candidates:
-        best = min(candidates, key=lambda c: (-len(candidates[c]), CAPABILITIES.index(c)))
-        adjacent = {"capability": best, "via": candidates[best]}
+    adjacent = [
+        {
+            "capability": c,
+            "via": in_order({source["capability"] for source in sources[c]}),
+            "answers": [{k: source[k] for k in ("facet", "answer", "note")} for source in sources[c]],
+        }
+        for c in CAPABILITIES
+        if c in sources and c not in direct
+    ]
 
     delivery = CAPABILITIES[0]
     implementation = None
@@ -223,6 +249,7 @@ def build(sections, verdict):
         implementation = {"capability": delivery, "via": in_order(direct)}
 
     return {
+        "version": VERSION,
         "environment": environment,
         "verdict": verdict,
         "direct": direct,
@@ -240,7 +267,7 @@ def build(sections, verdict):
         "adjacent": adjacent,
         "implementation": implementation,
         "patterns": [found for p in PATTERNS if (found := pattern(p, keys, texts))],
-        "in_good_shape": [c for c in CAPABILITIES if c not in direct and c not in unclear],
+        "in_good_shape": [c for c in CAPABILITIES if c not in direct and c not in unclear and c not in sources],
         "unknowns": unknowns,
         "follow_up": [{"capability": c} | FOLLOW_UP[c] for c in ranked[:3]],
     }

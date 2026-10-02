@@ -12,7 +12,7 @@ HERE = Path(__file__).parent
 sys.path.insert(0, str(HERE.parent / "healthcheck-readout"))
 import readout  # noqa: E402
 import summary  # noqa: E402
-from readout import ADJACENT, CAPABILITIES, DIRECT, KEY, tags  # noqa: E402
+from readout import ADJACENCY, ADJACENT, CAPABILITIES, DIRECT, KEY, tags  # noqa: E402
 
 QUESTIONNAIRE = yaml.safe_load((HERE / "questionnaire.yaml").read_text())
 PERSONAS = yaml.safe_load((HERE / "personas.yaml").read_text())
@@ -57,11 +57,11 @@ def select(answers):
 
 def evaluate(answers):
     result = readout.build(select(answers), "")
-    adjacent, implementation = result["adjacent"], result["implementation"]
+    implementation = result["implementation"]
     return {
         "direct": result["direct"],
         "presented": result["presented"],
-        "adjacent": {adjacent["capability"]: adjacent["via"]} if adjacent else {},
+        "adjacent": {a["capability"]: a["via"] for a in result["adjacent"]},
         "solution_adjacency": implementation["via"] if implementation else [],
         "patterns": [pattern["name"] for pattern in result["patterns"]],
         "overall": overall([q["answers"][n - 1]["risk"] for q, n in zip(QUESTIONS, answers)]),
@@ -163,6 +163,7 @@ class Structure(unittest.TestCase):
             if tags(a, ADJACENT)
         }
         self.assertEqual(found, CROSS_TAGS)
+        self.assertEqual(set(ADJACENCY), set(CROSS_TAGS))
 
     def test_rationale_and_mitigation(self):
         for question in QUESTIONS:
@@ -227,6 +228,22 @@ class Personas(unittest.TestCase):
                     for e in area["evidence"]:
                         self.assertIn(f"| {e['answer']} |", text)
 
+    def test_no_signal_excludes_every_area_with_a_signal(self):
+        for persona in PERSONAS:
+            with self.subTest(persona["name"]):
+                result = readout.build(select(persona["answers"]), "")
+                signalled = set(result["direct"]) | {a["capability"] for a in result["adjacent"]}
+                self.assertFalse(signalled & set(result["in_good_shape"]))
 
-if __name__ == "__main__":
-    unittest.main()
+    def test_summary_claims_a_benefit_only_when_an_area_is_highlighted(self):
+        for persona in PERSONAS:
+            with self.subTest(persona["name"]):
+                result = readout.build(select(persona["answers"]), "") | {"generated": "2026-10-02T09:00:00+00:00"}
+                text = summary.markdown("Example Ltd", result)
+                self.assertEqual("would benefit" in text, bool(result["areas"]))
+                self.assertEqual("# Suggested next steps" in text, bool(result["areas"]))
+
+    def test_summary_omits_the_overall_result(self):
+        for message in QUESTIONNAIRE["riskMessages"].values():
+            result = readout.build(select(PERSONAS[0]["answers"]), message) | {"generated": "2026-10-02T09:00:00+00:00"}
+            self.assertNotIn(message, summary.markdown("Example Ltd", result))
