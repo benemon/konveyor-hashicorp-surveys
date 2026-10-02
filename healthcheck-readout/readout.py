@@ -4,7 +4,7 @@ DIRECT = "Capability Signal"
 ADJACENT = "Adjacent Capability Signal"
 # Identifies the interpretation and rendering rules that produced a result. The questionnaire
 # has its own version, carried in the assessment.
-VERSION = "0.3"
+VERSION = "0.4"
 
 # "<facet>: <key>", one per answer. The category is never created in MTA, so the hub keeps
 # the tag in the assessment but off applications.
@@ -33,13 +33,13 @@ ADJACENCY = {
 # and, if "any" is present, at least "at_least" of those do (one when not given).
 PATTERNS = [
     {
-        "name": "Automation stops at day one",
+        "name": "Day-two change escapes automation",
         "detail": "Infrastructure is provisioned as code, but day-two changes still bypass the automated lifecycle.",
         "capabilities": ["Infrastructure Lifecycle"],
         "all": {"provisioning": {"fragmented-code", "shared-code"}, "change and drift": {"by-hand", "mixed"}},
     },
     {
-        "name": "Automated delivery without guardrails",
+        "name": "Automated delivery with uneven guardrails",
         "detail": "Infrastructure is delivered as code, but standards are checked after deployment or team by team.",
         "capabilities": ["Infrastructure Lifecycle"],
         "all": {"provisioning": {"fragmented-code", "shared-code"}, "guardrails": {"after-the-fact", "per-team"}},
@@ -51,7 +51,7 @@ PATTERNS = [
         "all": {"provisioning": {"fragmented-code", "shared-code"}, "guardrails": {"central-approval"}},
     },
     {
-        "name": "Centralised but static",
+        "name": "Centralised secrets, manual credential lifecycle",
         "detail": "Secrets are held in one central store, but credentials are long-lived or rotated by hand.",
         "capabilities": ["Machine Identity and Secrets"],
         "all": {"secret storage": {"central-store"}, "rotation": {"rarely", "manual-schedule"}},
@@ -100,7 +100,7 @@ PATTERNS = [
         "all": {"deployment": {"one-platform"}, "non-standard workloads": {"individual-servers", "separate-platforms"}},
     },
     {
-        "name": "Network rules without service identity",
+        "name": "Network-centric controls without internal certificates",
         "detail": "Traffic between services is controlled by network location or hand-maintained rules, and internal services do not commonly use certificates.",
         "capabilities": ["Machine Identity and Secrets", "Service Networking"],
         "all": {

@@ -5,9 +5,29 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
-from readout import FOLLOW_UP, VERSION
+from readout import FOLLOW_UP
 
 COVER = Path(__file__).with_name("cover.pdf")
+# The smallest readout the summary accepts. The image build renders it to fetch the TeX files.
+SAMPLE = {
+    "generated": "2026-01-01T00:00:00+00:00",
+    "questionnaire_version": "0",
+    "readout_version": "0",
+    "environment": "e",
+    "verdict": "v",
+    "areas": [
+        {
+            "capability": "Human Access",
+            "strength": "strong",
+            "evidence": [{"facet": "f", "answer": "a", "rationale": "r", "mitigation": "m"}],
+        }
+    ],
+    "presented": ["Human Access"],
+    "in_good_shape": ["Workload Lifecycle"],
+    "patterns": [{"name": "n", "detail": "d"}],
+    "unknowns": [{"question": "q"}],
+    "implementation": None,
+}
 # Name of the summary in the application's bucket in MTA.
 FILE = "healthcheck-summary.pdf"
 TEMPLATE = "/opt/eisvogel.latex"
@@ -52,11 +72,13 @@ def markdown(organisation, readout):
     generated = datetime.fromisoformat(readout["generated"])
     day = f"{generated.day} {generated:%B %Y}"
     areas = readout["areas"]
+    # DESIGN.md section 4.7: the respondent sees at most three areas. MTA holds them all.
+    presented = [a for a in areas if a["capability"] in readout["presented"]]
     lines = [
         "---",
         f"title: {json.dumps(organisation + ': 5 Minute HashiCorp Healthcheck')}",
         f"date: {json.dumps(day)}",
-        f"subject: {json.dumps(f'questionnaire {readout["questionnaire_version"]}, readout {VERSION}')}",
+        f"subject: {json.dumps(f'questionnaire {readout["questionnaire_version"]}, readout {readout["readout_version"]}')}",
         "lang: en-GB",
         "papersize: a4",
         'mainfont: "IBM Plex Sans"',
@@ -90,6 +112,8 @@ def markdown(organisation, readout):
             f"{escaped(organisation)}.",
             "",
         ]
+        if len(presented) < len(areas):
+            lines += ["Three areas are shown here, prioritised from the signals in the healthcheck.", ""]
     else:
         lines += ["These results come from a short questionnaire. No areas were highlighted.", ""]
     lines += summary_table([
@@ -97,7 +121,7 @@ def markdown(organisation, readout):
         ("Areas highlighted", [f"- {a['capability']} ({a['strength']})" for a in areas] or "None"),
         ("No signal in", [f"- {c}" for c in readout["in_good_shape"]] or "None"),
     ])
-    for number, area in enumerate(areas):
+    for number, area in enumerate(presented):
         # Keeps an area's heading and table on one page.
         lines += needspace(lines_needed(area["evidence"]) + (0 if number else 4))
         if number == 0:
@@ -121,9 +145,9 @@ def markdown(organisation, readout):
         lines += ["", "# Not answered", ""]
         lines += [f"- {u['question']}" for u in readout["unknowns"]]
     if areas:
-        lines += needspace(4 + sum(4 + len(FOLLOW_UP[a["capability"]]["roles"]) for a in areas))
+        lines += needspace(4 + sum(4 + len(FOLLOW_UP[a["capability"]]["roles"]) for a in presented))
         lines += ["# Suggested next steps", ""]
-    for number, area in enumerate(areas, 1):
+    for number, area in enumerate(presented, 1):
         follow_up = FOLLOW_UP[area["capability"]]
         topics = follow_up["topics"][0].lower() + follow_up["topics"][1:]
         lines += [

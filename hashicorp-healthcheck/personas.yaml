@@ -29,7 +29,7 @@
   presented: [Infrastructure Lifecycle]
   adjacent: {}
   solution_adjacency: []
-  patterns: [Automated delivery without guardrails]
+  patterns: [Automated delivery with uneven guardrails]
   overall: yellow
 
 - name: "D: mature platform organisation"
@@ -72,8 +72,8 @@
   adjacent: {}
   solution_adjacency: []
   patterns:
-    - Automation stops at day one
-    - Centralised but static
+    - Day-two change escapes automation
+    - Centralised secrets, manual credential lifecycle
     - Identity without session accountability
     - Trust by network location
   overall: red
@@ -111,5 +111,5 @@
   adjacent:
     Machine Identity and Secrets: [Service Networking]
   solution_adjacency: [Service Networking]
-  patterns: [Network rules without service identity]
+  patterns: [Network-centric controls without internal certificates]
   overall: red

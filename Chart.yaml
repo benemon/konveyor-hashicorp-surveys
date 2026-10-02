@@ -1,4 +1,4 @@
 apiVersion: v2
 name: hashicorp-healthcheck
 description: The HashiCorp Healthcheck questionnaire, its readout addon and the Healthcheck Console service, on an MTA or Konveyor instance.
-version: 0.3.0
+version: 0.4.0

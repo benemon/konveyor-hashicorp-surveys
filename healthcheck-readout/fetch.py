@@ -50,19 +50,4 @@ for name in fonts.namelist():
 
 # Tectonic downloads the TeX files a document needs on first use. Rendering a summary that
 # uses every construct here puts them in the image, so the addon needs no network.
-evidence = {"facet": "f", "answer": "a", "rationale": "r", "mitigation": "m"}
-summary.pdf(
-    "Example",
-    {
-        "generated": "2026-01-01T00:00:00+00:00",
-        "questionnaire_version": "0",
-        "environment": "e",
-        "verdict": "v",
-        "areas": [{"capability": "Human Access", "strength": "strong", "evidence": [evidence]}],
-        "in_good_shape": ["Workload Lifecycle"],
-        "patterns": [{"name": "n", "detail": "d"}],
-        "unknowns": [{"question": "q"}],
-        "implementation": None,
-    },
-    cached=False,
-)
+summary.pdf("Example", summary.SAMPLE, cached=False)

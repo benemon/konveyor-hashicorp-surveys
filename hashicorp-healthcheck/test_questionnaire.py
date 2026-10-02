@@ -234,9 +234,46 @@ class Personas(unittest.TestCase):
                 result = readout.build(select(persona["answers"]), "") | {"generated": "2026-10-02T09:00:00+00:00"}
                 text = summary.markdown("Example Ltd", result)
                 for area in result["areas"]:
-                    self.assertIn(f"## {area['capability']}", text)
+                    shown = area["capability"] in result["presented"]
+                    self.assertEqual(f"## {area['capability']}" in text, shown)
+                    self.assertEqual(f"**{area['capability']}.** A follow-up session" in text, shown)
                     for e in area["evidence"]:
-                        self.assertIn(f"| {e['answer']} |", text)
+                        self.assertEqual(f"| {e['answer']} |" in text, shown)
+                self.assertEqual("Three areas are shown here" in text, len(result["areas"]) > 3)
+
+    def test_presentation_cap(self):
+        persona = next(p for p in PERSONAS if p["name"].startswith("A"))
+        result = readout.build(select(persona["answers"]), "") | {"generated": "2026-10-02T09:00:00+00:00"}
+        self.assertEqual(len(result["areas"]), 5)
+        self.assertEqual(len(result["presented"]), 3)
+        text = summary.markdown("Example Ltd", result)
+        self.assertEqual(text.count("\n## "), 3)
+        self.assertEqual(text.count("A follow-up session on"), 3)
+
+    def test_summary_metadata_uses_the_readout_versions(self):
+        result = summary.SAMPLE | {"questionnaire_version": "0.2", "readout_version": "0.3"}
+        self.assertIn('subject: "questionnaire 0.2, readout 0.3"', summary.markdown("Example Ltd", result))
+
+    def test_build_sample_renders(self):
+        summary.markdown("Example", summary.SAMPLE)
+
+    def test_single_gap_matrix(self):
+        baseline = next(p for p in PERSONAS if p["name"].startswith("D"))["answers"]
+        for index, question in enumerate(QUESTIONS):
+            for answer in question["answers"]:
+                if answer["risk"] not in ("red", "yellow"):
+                    continue
+                key = next(iter(tags(answer, KEY)))
+                with self.subTest(key):
+                    answers = baseline[:index] + [answer["order"]] + baseline[index + 1 :]
+                    result = readout.build(select(answers), "")
+                    capability = next(iter(tags(answer, DIRECT)))
+                    self.assertEqual(result["direct"], {capability: "strong" if answer["risk"] == "red" else "moderate"})
+                    self.assertEqual([e["key"] for a in result["areas"] for e in a["evidence"]], [key])
+                    self.assertEqual({a["capability"] for a in result["adjacent"]}, CROSS_TAGS.get(key, set()))
+                    facet = key.split(": ")[0]
+                    for pattern in result["patterns"]:
+                        self.assertIn(facet, [a["facet"] for a in pattern["answers"]], pattern["name"])
 
     def test_no_signal_excludes_every_area_with_a_signal(self):
         for persona in PERSONAS:
