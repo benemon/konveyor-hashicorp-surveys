@@ -1,8 +1,8 @@
-{{- $openshift := include "hashicorp-snapshot.openshift" . }}
+{{- $openshift := include "hashicorp-healthcheck.openshift" . }}
 {{- $image := .Values.images.console }}
 {{- if $openshift }}
-{{- $image = printf "%s/snapshot-console:latest" (include "hashicorp-snapshot.registry" .) }}
-{{- with lookup "apps/v1" "Deployment" .Release.Namespace "snapshot-console" }}
+{{- $image = printf "%s/healthcheck-console:latest" (include "hashicorp-healthcheck.registry" .) }}
+{{- with lookup "apps/v1" "Deployment" .Release.Namespace "healthcheck-console" }}
 {{- $image = (index .spec.template.spec.containers 0).image }}
 {{- end }}
 {{- end }}
@@ -10,29 +10,29 @@
 apiVersion: v1
 kind: Secret
 metadata:
-  name: snapshot-console
+  name: healthcheck-console
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: snapshot-console
+  name: healthcheck-console
   {{- if $openshift }}
   annotations:
     image.openshift.io/triggers: >-
-      [{"from":{"kind":"ImageStreamTag","name":"snapshot-console:latest"},
-      "fieldPath":"spec.template.spec.containers[?(@.name==\"snapshot-console\")].image"}]
+      [{"from":{"kind":"ImageStreamTag","name":"healthcheck-console:latest"},
+      "fieldPath":"spec.template.spec.containers[?(@.name==\"healthcheck-console\")].image"}]
   {{- end }}
 spec:
   selector:
     matchLabels:
-      app: snapshot-console
+      app: healthcheck-console
   template:
     metadata:
       labels:
-        app: snapshot-console
+        app: healthcheck-console
     spec:
       containers:
-        - name: snapshot-console
+        - name: healthcheck-console
           # On OpenShift the image trigger rewrites this field with each build's digest.
           # Applying the live value back keeps an upgrade from conflicting with it.
           image: {{ $image }}
@@ -49,19 +49,19 @@ spec:
               port: 8080
           volumeMounts:
             - name: api-key
-              mountPath: /etc/snapshot-console
+              mountPath: /etc/healthcheck-console
       volumes:
         - name: api-key
           secret:
-            secretName: snapshot-console
+            secretName: healthcheck-console
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: snapshot-console
+  name: healthcheck-console
 spec:
   selector:
-    app: snapshot-console
+    app: healthcheck-console
   ports:
     - port: 8080
 ---
@@ -70,13 +70,13 @@ spec:
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  name: snapshot-console
+  name: healthcheck-console
 spec:
-  host: {{ include "hashicorp-snapshot.host" . }}
+  host: {{ include "hashicorp-healthcheck.host" . }}
   path: /console
   to:
     kind: Service
-    name: snapshot-console
+    name: healthcheck-console
   tls:
     termination: edge
     insecureEdgeTerminationPolicy: Redirect
@@ -84,7 +84,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: snapshot-console
+  name: healthcheck-console
 spec:
   ingressClassName: nginx
   rules:
@@ -94,7 +94,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: snapshot-console
+                name: healthcheck-console
                 port:
                   number: 8080
       {{- with .Values.host }}
@@ -106,11 +106,11 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: snapshot-console
+  name: healthcheck-console
 spec:
   podSelector:
     matchLabels:
-      app: snapshot-console
+      app: healthcheck-console
   ingress:
     - ports:
         - port: 8080

@@ -1,10 +1,10 @@
-{{- $questionnaire := .Files.Get "hashicorp-snapshot/questionnaire.yaml" | fromYaml | toJson }}
-{{- $script := .Files.Get "hashicorp-snapshot/setup.py" }}
+{{- $questionnaire := .Files.Get "hashicorp-healthcheck/questionnaire.yaml" | fromYaml | toJson }}
+{{- $script := .Files.Get "hashicorp-healthcheck/setup.py" }}
 {{- $sources := (.Files.Glob "s*/*").AsConfig }}
 apiVersion: v1
 kind: Secret
 metadata:
-  name: hashicorp-snapshot-admin
+  name: hashicorp-healthcheck-admin
 stringData:
   username: {{ .Values.admin.username | quote }}
   password: {{ .Values.admin.password | quote }}
@@ -12,7 +12,7 @@ stringData:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: hashicorp-snapshot-setup
+  name: hashicorp-healthcheck-setup
 data:
   setup.py: {{ $script | quote }}
   questionnaire.json: {{ $questionnaire | quote }}
@@ -20,18 +20,18 @@ data:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: hashicorp-snapshot-setup
+  name: hashicorp-healthcheck-setup
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: hashicorp-snapshot-setup
+  name: hashicorp-healthcheck-setup
 rules:
   - apiGroups: [""]
     resources: [secrets]
-    resourceNames: [snapshot-console]
+    resourceNames: [healthcheck-console]
     verbs: [get, patch]
-  {{- if include "hashicorp-snapshot.openshift" . }}
+  {{- if include "hashicorp-healthcheck.openshift" . }}
   - apiGroups: [build.openshift.io]
     resources: [buildconfigs/instantiate]
     verbs: [create]
@@ -40,26 +40,26 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: hashicorp-snapshot-setup
+  name: hashicorp-healthcheck-setup
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: hashicorp-snapshot-setup
+  name: hashicorp-healthcheck-setup
 subjects:
   - kind: ServiceAccount
-    name: hashicorp-snapshot-setup
+    name: hashicorp-healthcheck-setup
 ---
 apiVersion: batch/v1
 kind: Job
 metadata:
   # A Job's template is immutable, so a change to its inputs makes a new Job. The job
   # starts the builds, so the build sources are among its inputs.
-  name: hashicorp-snapshot-setup-{{ print $script $questionnaire $sources | sha256sum | trunc 8 }}
+  name: hashicorp-healthcheck-setup-{{ print $script $questionnaire $sources | sha256sum | trunc 8 }}
 spec:
   backoffLimit: 3
   template:
     spec:
-      serviceAccountName: hashicorp-snapshot-setup
+      serviceAccountName: hashicorp-healthcheck-setup
       restartPolicy: Never
       containers:
         - name: setup
@@ -68,18 +68,18 @@ spec:
           command: [python, /setup/setup.py]
           env:
             - name: BUILDS
-              value: {{ if include "hashicorp-snapshot.openshift" . }}snapshot-console snapshot-readout{{ else }}""{{ end }}
+              value: {{ if include "hashicorp-healthcheck.openshift" . }}healthcheck-console healthcheck-readout{{ else }}""{{ end }}
             - name: MTA_HUB
               value: http://{{ .Values.appName }}-hub:8080
             - name: NAMESPACE
               value: {{ .Release.Namespace }}
           envFrom:
             - secretRef:
-                name: hashicorp-snapshot-admin
+                name: hashicorp-healthcheck-admin
           volumeMounts:
             - name: setup
               mountPath: /setup
       volumes:
         - name: setup
           configMap:
-            name: hashicorp-snapshot-setup
+            name: hashicorp-healthcheck-setup

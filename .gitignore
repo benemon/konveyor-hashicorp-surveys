@@ -1,1 +1,4 @@
 kind/kubeconfig
+kind/tls.crt
+kind/tls.key
+healthcheck-readout/cover.pdf

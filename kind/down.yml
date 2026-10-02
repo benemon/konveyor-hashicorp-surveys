@@ -3,7 +3,7 @@
   connection: local
   gather_facts: false
   vars:
-    cluster: snapshot
+    cluster: healthcheck
   environment:
     KIND_EXPERIMENTAL_PROVIDER: podman
   tasks:
@@ -20,5 +20,5 @@
         name: "localhost/{{ item }}"
         state: absent
       loop:
-        - snapshot-console
-        - snapshot-readout
+        - healthcheck-console
+        - healthcheck-readout

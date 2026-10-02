@@ -1,17 +1,21 @@
 import json
 import os
+import subprocess
+import tempfile
 import urllib.request
 from datetime import datetime, timezone
+from pathlib import Path
 
 import readout
+import summary
 
 HUB = os.environ["HUB_BASE_URL"].rstrip("/")
 TOKEN = os.environ["TOKEN"]
 TASK = os.environ["TASK"]
 
-QUESTIONNAIRE = "HashiCorp Snapshot"
+QUESTIONNAIRE = "HashiCorp Healthcheck"
 # Facts and tags written here are owned by this source, so each run replaces the last.
-SOURCE = "snapshot-readout"
+SOURCE = "healthcheck-readout"
 
 
 def hub(method, path, body=None):
@@ -96,21 +100,15 @@ def insights(result):
         )
 
 
-def upload_analysis(application, result):
-    # The hub reads an analysis as one file of three sections delimited by GS-wrapped markers.
-    def section(name, documents):
-        return f"\x1dBEGIN-{name}\x1d\n" + "\n".join(json.dumps(d) for d in documents) + f"\n\x1dEND-{name}\x1d\n"
-
-    manifest = section("MAIN", [{}]) + section("INSIGHTS", insights(result)) + section("DEPS", [])
-    boundary = "snapshot-readout-manifest"
+def upload(path, content, content_type):
+    boundary = "healthcheck-readout-upload"
     body = (
         f"--{boundary}\r\n"
-        'Content-Disposition: form-data; name="file"; filename="manifest"\r\n'
-        "Content-Type: application/json\r\n\r\n"
-        f"{manifest}\r\n--{boundary}--\r\n"
-    ).encode()
+        'Content-Disposition: form-data; name="file"; filename="file"\r\n'
+        f"Content-Type: {content_type}\r\n\r\n"
+    ).encode() + content + f"\r\n--{boundary}--\r\n".encode()
     request = urllib.request.Request(
-        f"{HUB}/applications/{application}/analyses",
+        HUB + path,
         data=body,
         headers={
             "Authorization": f"Bearer {TOKEN}",
@@ -119,6 +117,25 @@ def upload_analysis(application, result):
         },
     )
     urllib.request.urlopen(request, timeout=30).close()
+
+
+def analysis(result):
+    # The hub reads an analysis as one file of three sections delimited by GS-wrapped markers.
+    def section(name, documents):
+        return f"\x1dBEGIN-{name}\x1d\n" + "\n".join(json.dumps(d) for d in documents) + f"\n\x1dEND-{name}\x1d\n"
+
+    return (section("MAIN", [{}]) + section("INSIGHTS", insights(result)) + section("DEPS", [])).encode()
+
+
+def summary_pdf(organisation, result):
+    with tempfile.TemporaryDirectory() as directory:
+        Path(directory, "summary.md").write_text(summary.markdown(organisation, result))
+        subprocess.run(
+            ["pandoc", "summary.md", "-o", "summary.pdf", "--template", "eisvogel", "--pdf-engine", "xelatex"],
+            cwd=directory,
+            check=True,
+        )
+        return Path(directory, "summary.pdf").read_bytes()
 
 
 def run():
@@ -130,7 +147,12 @@ def run():
     result = readout.build(assessment["sections"], assessment["verdict"])
     result["generated"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
     hub("PUT", f"/applications/{application}/facts/{SOURCE}:", result)
-    upload_analysis(application, result)
+    upload(f"/applications/{application}/analyses", analysis(result), "application/json")
+    upload(
+        f"/applications/{application}/bucket/{summary.FILE}",
+        summary_pdf(task["application"]["name"], result),
+        "application/pdf",
+    )
     hub(
         "PUT",
         f"/applications/{application}/tags?source={SOURCE}",

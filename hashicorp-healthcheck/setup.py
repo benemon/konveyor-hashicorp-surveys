@@ -12,7 +12,7 @@ ADMIN = base64.b64encode(f"{os.environ['username']}:{os.environ['password']}".en
 ACCOUNT = Path("/var/run/secrets/kubernetes.io/serviceaccount")
 CLUSTER = "https://kubernetes.default.svc"
 NAMESPACE = os.environ["NAMESPACE"]
-SECRET = f"{CLUSTER}/api/v1/namespaces/{NAMESPACE}/secrets/snapshot-console"
+SECRET = f"{CLUSTER}/api/v1/namespaces/{NAMESPACE}/secrets/healthcheck-console"
 BUILDS = f"{CLUSTER}/apis/build.openshift.io/v1/namespaces/{NAMESPACE}/buildconfigs"
 # Answer keys must not exist in MTA: the hub then leaves them off applications.
 UNSEEDED = "Answer Key"

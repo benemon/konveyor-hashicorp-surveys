@@ -1,5 +1,5 @@
 {{- if .Capabilities.APIVersions.Has "build.openshift.io/v1" }}
-{{- range $name := list "snapshot-console" "snapshot-readout" }}
+{{- range $name := list "healthcheck-console" "healthcheck-readout" }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -7,7 +7,13 @@ metadata:
   name: {{ $name }}-source
 data:
   {{- range $file, $_ := $.Files.Glob (printf "%s/*.*" $name) }}
+  {{- if ne (ext $file) ".pdf" }}
   {{ base $file }}: {{ $.Files.Get $file | quote }}
+  {{- end }}
+  {{- end }}
+binaryData:
+  {{- range $file, $_ := $.Files.Glob (printf "%s/*.pdf" $name) }}
+  {{ base $file }}: {{ $.Files.Get $file | b64enc }}
   {{- end }}
 ---
 apiVersion: image.openshift.io/v1
@@ -27,10 +33,7 @@ spec:
           name: {{ $name }}-source
         destinationDir: .
   strategy:
-    dockerStrategy:
-      from:
-        kind: DockerImage
-        name: {{ $.Values.pythonImage }}
+    dockerStrategy: {}
   output:
     to:
       kind: ImageStreamTag
@@ -41,7 +44,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: hashicorp-snapshot-build
+  name: hashicorp-healthcheck-build
 spec:
   podSelector:
     matchExpressions:

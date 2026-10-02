@@ -1,12 +1,12 @@
-{{- define "hashicorp-snapshot.openshift" -}}
+{{- define "hashicorp-healthcheck.openshift" -}}
 {{- if .Capabilities.APIVersions.Has "route.openshift.io/v1" }}true{{ end -}}
 {{- end -}}
 
-{{- define "hashicorp-snapshot.registry" -}}
+{{- define "hashicorp-healthcheck.registry" -}}
 image-registry.openshift-image-registry.svc:5000/{{ .Release.Namespace }}
 {{- end -}}
 
-{{- define "hashicorp-snapshot.host" -}}
+{{- define "hashicorp-healthcheck.host" -}}
 {{- if .Values.host -}}
 {{ .Values.host }}
 {{- else -}}

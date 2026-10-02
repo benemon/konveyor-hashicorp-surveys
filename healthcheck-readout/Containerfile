@@ -1,0 +1,9 @@
+FROM docker.io/pandoc/extra:latest-ubuntu
+RUN python3 -c "import io, urllib.request, zipfile; z = zipfile.ZipFile(io.BytesIO(urllib.request.urlopen('https://github.com/IBM/plex/releases/download/%40ibm%2Fplex-sans%401.1.0/ibm-plex-sans.zip').read())); [open('/usr/share/fonts/' + n.rsplit('/', 1)[1], 'wb').write(z.read(n)) for n in z.namelist() if n.endswith('.otf') and '/complete/otf/' in n]" && fc-cache -f
+WORKDIR /opt/healthcheck-readout
+# The cover is not in the repository, so the build takes it only when it is present.
+COPY --chmod=644 app.py readout.py pointers.py summary.py cover.pd[f] ./
+# xelatex writes its caches under the home directory, and the pod's user may have none.
+ENV HOME=/tmp
+ENTRYPOINT []
+CMD ["python3", "app.py"]

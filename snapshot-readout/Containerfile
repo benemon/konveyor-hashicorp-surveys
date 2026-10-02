@@ -1,4 +1,0 @@
-FROM registry.access.redhat.com/ubi9/python-312-minimal
-# Files injected into an OpenShift build arrive readable by root only.
-COPY --chmod=644 app.py readout.py pointers.py ./
-CMD ["python", "app.py"]

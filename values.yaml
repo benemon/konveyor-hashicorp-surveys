@@ -11,15 +11,15 @@ admin:
   username: admin
   password: admin
 
-# Host of the Snapshot Console route or ingress. It must be the UI's host. On OpenShift
+# Host of the Healthcheck Console route or ingress. It must be the UI's host. On OpenShift
 # the default is the host the operator gives the UI route.
 host: ""
 
-# Base image for the setup job and, on OpenShift, the two builds.
+# Image for the setup job.
 pythonImage: registry.access.redhat.com/ubi9/python-312-minimal
 
 # The two images on a cluster without OpenShift builds, built from the Containerfiles in
-# snapshot-console/ and snapshot-readout/. On OpenShift the chart builds them.
+# healthcheck-console/ and healthcheck-readout/. On OpenShift the chart builds them.
 images:
-  console: localhost/snapshot-console:latest
-  readout: localhost/snapshot-readout:latest
+  console: localhost/healthcheck-console:latest
+  readout: localhost/healthcheck-readout:latest

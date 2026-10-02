@@ -1,15 +1,15 @@
-- name: Stand up HashiCorp Snapshot on upstream Konveyor in a kind cluster
+- name: Stand up HashiCorp Healthcheck on upstream Konveyor in a kind cluster
   hosts: localhost
   connection: local
   gather_facts: false
   vars:
-    cluster: snapshot
+    cluster: healthcheck
     namespace: konveyor-tackle
     kubeconfig: "{{ playbook_dir }}/kubeconfig"
     konveyor_version: v0.11.0
     images:
-      - snapshot-console
-      - snapshot-readout
+      - healthcheck-console
+      - healthcheck-readout
   environment:
     KIND_EXPERIMENTAL_PROVIDER: podman
   module_defaults:
@@ -29,10 +29,52 @@
         --config {{ playbook_dir }}/cluster.yaml --kubeconfig {{ kubeconfig }}
       when: cluster not in clusters.stdout_lines
 
+    # Only on a new cluster: applying the manifest again would undo the certificate argument below.
     - name: Install the ingress controller
       kubernetes.core.k8s:
         src: https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.12.1/deploy/static/provider/kind/deploy.yaml
         state: present
+      when: cluster not in clusters.stdout_lines
+
+    - name: Look for a certificate for localhost
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/tls.crt"
+      register: certificate
+
+    - name: Store the certificate
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: v1
+          kind: Secret
+          type: kubernetes.io/tls
+          metadata:
+            name: default-tls
+            namespace: ingress-nginx
+          data:
+            tls.crt: "{{ lookup('ansible.builtin.file', playbook_dir ~ '/tls.crt') | b64encode }}"
+            tls.key: "{{ lookup('ansible.builtin.file', playbook_dir ~ '/tls.key') | b64encode }}"
+      when: certificate.stat.exists
+      no_log: true
+
+    - name: Read the ingress controller
+      kubernetes.core.k8s_info:
+        kind: Deployment
+        namespace: ingress-nginx
+        name: ingress-nginx-controller
+      register: controller
+
+    - name: Serve the certificate by default
+      kubernetes.core.k8s_json_patch:
+        kind: Deployment
+        namespace: ingress-nginx
+        name: ingress-nginx-controller
+        patch:
+          - op: add
+            path: /spec/template/spec/containers/0/args/-
+            value: --default-ssl-certificate=ingress-nginx/default-tls
+      when:
+        - certificate.stat.exists
+        - "'--default-ssl-certificate=ingress-nginx/default-tls' not in controller.resources[0].spec.template.spec.containers[0].args"
 
     # Its admission webhook must be serving before the chart's Ingress can be created.
     - name: Wait for the ingress controller
@@ -115,9 +157,9 @@
         path: "{{ archives.path }}"
         state: absent
 
-    - name: Install the HashiCorp Snapshot chart
+    - name: Install the HashiCorp Healthcheck chart
       kubernetes.core.helm:
-        name: hashicorp-snapshot
+        name: hashicorp-healthcheck
         chart_ref: "{{ playbook_dir }}/.."
         release_namespace: "{{ namespace }}"
         values:
@@ -132,18 +174,18 @@
           type: Complete
         wait_timeout: 900
 
-    - name: Wait for Snapshot Console
+    - name: Wait for Healthcheck Console
       kubernetes.core.k8s_info:
         kind: Deployment
         namespace: "{{ namespace }}"
-        name: snapshot-console
+        name: healthcheck-console
         wait: true
         wait_condition:
           type: Available
         wait_timeout: 300
 
     # The API key reaches the pod's mounted secret a short while after the setup job stores it.
-    - name: Wait for Snapshot Console to reach Konveyor
+    - name: Wait for Healthcheck Console to reach Konveyor
       ansible.builtin.uri:
         url: https://localhost:8443/console/api/questionnaires
         validate_certs: false

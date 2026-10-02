@@ -100,7 +100,7 @@ PATTERNS = [
 FOLLOW_UP = {
     "Infrastructure Lifecycle": {
         "topics": "How infrastructure is provisioned, governed and changed after day one",
-        "roles": "Platform or infrastructure engineering lead",
+        "roles": ["Platform or infrastructure engineering lead"],
         "product": "Terraform",
         "colour": "#7B42BC",
         "talk_track": "Drift detection identifies divergence but does not remediate it automatically. Remediation "
@@ -108,7 +108,7 @@ FOLLOW_UP = {
     },
     "Machine Identity and Secrets": {
         "topics": "Where credentials and certificates come from, how long they live and how they are rotated",
-        "roles": "Security architect and an application platform owner",
+        "roles": ["Security architect", "Application platform owner"],
         "product": "Vault",
         "colour": "#FFCF25",
         "talk_track": "A useful progression: store secrets, automate rotation, eliminate standing credentials, "
@@ -116,7 +116,7 @@ FOLLOW_UP = {
     },
     "Human Access": {
         "topics": "How engineers reach systems, what they sign in with and how access is recorded",
-        "roles": "Security operations lead and an infrastructure access owner",
+        "roles": ["Security operations lead", "Infrastructure access owner"],
         "product": "Boundary",
         "colour": "#F24C53",
         "talk_track": "Authentication, authorisation, target connectivity, credentials and session accountability "
@@ -125,7 +125,7 @@ FOLLOW_UP = {
     },
     "Service Networking": {
         "topics": "How services find each other and how traffic between them is authorised across environments",
-        "roles": "Network or platform architect",
+        "roles": ["Network or platform architect"],
         "product": "Consul",
         "colour": "#E03875",
         "talk_track": "Service discovery answers where a service is. Service identity and intentions answer "
@@ -133,7 +133,7 @@ FOLLOW_UP = {
     },
     "Workload Lifecycle": {
         "topics": "How workloads of different types are deployed, scheduled and operated",
-        "roles": "Platform engineering lead and an application operations owner",
+        "roles": ["Platform engineering lead", "Application operations owner"],
         "product": "Nomad",
         "colour": "#06D092",
         "talk_track": "Task drivers include Docker, isolated exec, Java, QEMU and raw exec, so bringing a workload "

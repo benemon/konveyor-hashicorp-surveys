@@ -1,5 +1,5 @@
-name: HashiCorp Snapshot
-description: A five-minute, product-neutral snapshot of how infrastructure is delivered, secured, connected and run. It produces signals for further discussion, not findings.
+name: HashiCorp Healthcheck
+description: A five-minute, product-neutral healthcheck of how infrastructure is delivered, secured, connected and run. It produces signals for further discussion, not findings.
 required: true
 sections:
 - order: 1
@@ -623,5 +623,5 @@ thresholds:
 riskMessages:
   red: 'Strong signal in at least one area: a follow-up discussion is indicated'
   yellow: 'Moderate signals: areas worth exploring further'
-  green: No deeper session indicated by this snapshot
+  green: No deeper session indicated by this healthcheck
   unknown: Not enough information for a clear signal

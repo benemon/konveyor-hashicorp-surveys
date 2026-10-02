@@ -1,6 +1,6 @@
-# HashiCorp Snapshot: Design
+# HashiCorp Healthcheck: Design
 
-The design of the HashiCorp Snapshot questionnaire and of the readout derived from it. What the assessment is for and how to install and run it are in the [README](../README.md).
+The design of the HashiCorp Healthcheck questionnaire and of the readout derived from it. What the assessment is for and how to install and run it are in the [README](../README.md).
 
 ## 1. Principles
 
@@ -113,7 +113,7 @@ With 14 to 16 questions this gives:
 | red | one or more red answers | Follow-up discussion indicated |
 | yellow | no red, two or more yellow | Areas worth exploring |
 | unknown | neither of the above, four or more unknown | Not enough information for a signal |
-| green | otherwise | No deeper session indicated by this snapshot |
+| green | otherwise | No deeper session indicated by this healthcheck |
 
 `riskMessages` carries these in signal language. One red answer makes the overall result red. Q1 is unscored but counts in the denominator.
 
@@ -147,7 +147,7 @@ A spread estate served by one platform is not a pattern: one platform can span e
 
 ### 4.9 Capability pointers
 
-Each red or yellow answer has capability pointers: the capabilities of the associated product, and of a second product where the answer spans two, that a facilitator can discuss if the respondent asks what an improvement would look like. They are held in `snapshot-readout/pointers.py` by answer key. Each product also has a short talk track.
+Each red or yellow answer has capability pointers: the capabilities of the associated product, and of a second product where the answer spans two, that a facilitator can discuss if the respondent asks what an improvement would look like. They are held in `healthcheck-readout/pointers.py` by answer key. Each product also has a short talk track.
 
 A pattern's pointers are those of the answers behind it.
 
@@ -155,15 +155,33 @@ Pointers are never part of the questionnaire. Its mitigation text stays product-
 
 ### 4.10 Readout
 
-The `snapshot-readout` addon derives the readout from a completed assessment. `snapshot-readout/readout.py` is the single implementation of sections 4.3 to 4.5 and 4.7 to 4.9. The overall result (4.6) is MTA's own.
+The `healthcheck-readout` addon derives the readout from a completed assessment. `healthcheck-readout/readout.py` is the single implementation of sections 4.3 to 4.5 and 4.7 to 4.9. The overall result (4.6) is MTA's own.
 
-The addon cannot read the assessment itself. The Snapshot Console service reads it, with the message for its overall result, and submits them to the addon as the task's data.
+The addon cannot read the assessment itself. The Healthcheck Console service reads it, with the message for its overall result, and submits them to the addon as the task's data.
 
 Running the addon again replaces its previous output. The addon writes to the application:
 
 - an analysis with one entry per red or yellow answer and one per pattern. Each answer is entered twice, with an effort of 1 for Issues and with none for Insights. Patterns are entered for Insights only. An application's effort is therefore its number of gaps. An entry's target technologies are the capabilities and products it relates to. Its description carries the rationale, the mitigation and the capability pointers, and for a pattern the answers behind it;
-- facts under the source `snapshot-readout`: `environment`, `verdict`, `direct`, `areas` (every area with a signal, ranked, with its product, strength, facets and evidence), `presented`, `adjacent`, `implementation`, `patterns`, `in_good_shape`, `unknowns`, `follow_up` (topics, roles, product and talk track for each presented area) and `generated`;
+- facts under the source `healthcheck-readout`: `environment`, `verdict`, `direct`, `areas` (every area with a signal, ranked, with its product, strength, facets and evidence), `presented`, `adjacent`, `implementation`, `patterns`, `in_good_shape`, `unknowns`, `follow_up` (topics, roles, product and talk track for each presented area) and `generated`;
+- an executive summary as a PDF, `healthcheck-summary.pdf` in the application's bucket (section 4.11);
 - one tag per capability with a direct signal, named for the product and the strength, such as `Vault: strong`. Each product has its own tag category, in the product's brand colour. The addon creates these categories on first use.
+
+### 4.11 Executive summary
+
+The summary is the document sent to the respondent after the session. `healthcheck-readout/summary.py` writes it from the readout as Pandoc Markdown, and the addon renders it to A4 PDF with the Eisvogel template and IBM Plex Sans.
+
+It contains:
+
+1. a title page with the organisation and the date the readout was generated;
+2. an introduction, with a table of the environment, the overall result, the areas highlighted and the areas with no signal;
+3. one section per area with a signal, in ranked order, with a row per red or yellow answer: the aspect, the answer given, and its rationale and mitigation. A section is not split across pages;
+4. the patterns that hold;
+5. the questions answered "unknown";
+6. a next step per area, naming the product and the roles worth involving.
+
+The summary names products only in its next steps. It carries no capability pointers and no talk tracks, which are for the facilitator.
+
+The title page uses `healthcheck-readout/cover.pdf` as its background when the file is present at build time. The file is not in the repository.
 
 ## 5. Questions
 
@@ -351,6 +369,7 @@ Personas, in `personas.yaml`: nine reference respondents, each with its answers 
 - Every persona's readout equals its expected values. The overall result is computed with the threshold rule in section 3.
 - Every pattern holds for at least one persona.
 - For every persona, the gaps reported are exactly its red and yellow answers, with their wording.
+- For every persona, the executive summary has a section for each area with a signal and a row for each of its answers.
 
 | Persona | Shows |
 |---|---|
@@ -373,18 +392,19 @@ README.md
 Chart.yaml
 values.yaml
 templates/
-hashicorp-snapshot/
+hashicorp-healthcheck/
 ├── DESIGN.md
 ├── questionnaire.yaml
 ├── setup.py
 ├── personas.yaml
 └── test_questionnaire.py
-snapshot-readout/
+healthcheck-readout/
 ├── Containerfile
 ├── app.py
 ├── readout.py
-└── pointers.py
-snapshot-console/
+├── pointers.py
+└── summary.py
+healthcheck-console/
 ├── Containerfile
 ├── app.py
 └── index.html

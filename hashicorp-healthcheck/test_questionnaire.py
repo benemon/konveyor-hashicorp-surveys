@@ -9,8 +9,9 @@ import yaml
 
 HERE = Path(__file__).parent
 # The addon's logic is the single implementation of the signal model.
-sys.path.insert(0, str(HERE.parent / "snapshot-readout"))
+sys.path.insert(0, str(HERE.parent / "healthcheck-readout"))
 import readout  # noqa: E402
+import summary  # noqa: E402
 from readout import ADJACENT, CAPABILITIES, DIRECT, KEY, tags  # noqa: E402
 
 QUESTIONNAIRE = yaml.safe_load((HERE / "questionnaire.yaml").read_text())
@@ -215,6 +216,16 @@ class Personas(unittest.TestCase):
                     for e in area["evidence"]
                 ]
                 self.assertCountEqual(found, expected)
+
+    def test_summary_covers_every_gap(self):
+        for persona in PERSONAS:
+            with self.subTest(persona["name"]):
+                result = readout.build(select(persona["answers"]), "") | {"generated": "2026-10-02T09:00:00+00:00"}
+                text = summary.markdown("Example Ltd", result)
+                for area in result["areas"]:
+                    self.assertIn(f"## {area['capability']}", text)
+                    for e in area["evidence"]:
+                        self.assertIn(f"| {e['answer']} |", text)
 
 
 if __name__ == "__main__":
