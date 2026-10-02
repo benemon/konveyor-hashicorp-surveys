@@ -1,6 +1,9 @@
 {{- $questionnaire := .Files.Get "hashicorp-healthcheck/questionnaire.yaml" | fromYaml | toJson }}
 {{- $script := .Files.Get "hashicorp-healthcheck/setup.py" }}
-{{- $sources := (.Files.Glob "s*/*").AsConfig }}
+{{- $sources := "" }}
+{{- range $path, $_ := .Files.Glob "healthcheck-*/*" }}
+{{- $sources = print $sources $path ($.Files.Get $path | sha256sum) }}
+{{- end }}
 apiVersion: v1
 kind: Secret
 metadata:

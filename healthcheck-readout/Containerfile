@@ -5,5 +5,6 @@ WORKDIR /opt/healthcheck-readout
 COPY --chmod=644 app.py readout.py pointers.py summary.py cover.pd[f] ./
 # xelatex writes its caches under the home directory, and the pod's user may have none.
 ENV HOME=/tmp
-ENTRYPOINT []
-CMD ["python3", "app.py"]
+# Replaces the base image's pandoc entrypoint.
+ENTRYPOINT ["python3", "app.py"]
+CMD []

@@ -141,7 +141,7 @@ The "Maintenance" tab lists every respondent with its contact, whether its asses
 | Download respondents as CSV, with each result and signal | `GET respondents.csv` |
 | Generate a readout for every completed assessment | `POST readouts` with `{"all": true}`, which returns the task ids |
 | Delete one respondent | `DELETE respondents/<application id>` |
-| Delete every application, stakeholder and readout task | `DELETE respondents` with `{"confirm": "delete all respondents"}` |
+| Delete all respondents: every application, stakeholder and readout task | `DELETE respondents` with `{"confirm": "delete all respondents"}` |
 
 Deleting leaves the questionnaire and the tags in place. Neither delete can be undone.
 

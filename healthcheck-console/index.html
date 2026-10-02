@@ -11,7 +11,6 @@
     .pf-v5-c-masthead__brand { color: var(--pf-v5-global--Color--light-100); font-size: var(--pf-v5-global--FontSize--xl); }
     #readout-result ul { list-style: disc; padding-left: var(--pf-v5-global--spacer--lg); }
     #readout-result a { display: block; }
-    #maintenance-panel .pf-v5-c-card { margin-bottom: var(--pf-v5-global--spacer--md); }
   </style>
 </head>
 <body>
@@ -138,6 +137,7 @@
             <button class="pf-v5-c-button pf-m-primary" type="button" id="generate-all">Generate all readouts</button>
             <a class="pf-v5-c-button pf-m-secondary" href="api/respondents.csv">Download respondents (CSV)</a>
             <button class="pf-v5-c-button pf-m-secondary" type="button" id="refresh">Refresh</button>
+            <button class="pf-v5-c-button pf-m-danger" type="button" id="delete-all">Delete all respondents</button>
           </div>
           <div class="pf-v5-c-card__body">
             <div class="pf-v5-c-alert pf-m-inline" id="maintenance-status" hidden>
@@ -160,38 +160,25 @@
             </table>
           </div>
         </div>
-        <div class="pf-v5-c-card">
-          <div class="pf-v5-c-card__title">
-            <h2 class="pf-v5-c-card__title-text">Clear down</h2>
-          </div>
-          <div class="pf-v5-c-card__body">
-            <form class="pf-v5-c-form pf-m-limit-width" id="clear">
-              <p>
-                Deletes every application, stakeholder and readout task in MTA. The questionnaire and the tags stay.
-                This cannot be undone.
-              </p>
-              <div class="pf-v5-c-form__group">
-                <div class="pf-v5-c-form__group-label">
-                  <label class="pf-v5-c-form__label" for="confirm">
-                    <span class="pf-v5-c-form__label-text">Type "delete all respondents" to confirm</span>
-                  </label>
-                </div>
-                <div class="pf-v5-c-form__group-control">
-                  <span class="pf-v5-c-form-control">
-                    <input type="text" id="confirm" autocomplete="off">
-                  </span>
-                </div>
-              </div>
-              <div class="pf-v5-c-form__group pf-m-action">
-                <div class="pf-v5-c-form__actions">
-                  <button class="pf-v5-c-button pf-m-danger" type="submit" disabled>Delete all respondents</button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
       </section>
     </main>
+  </div>
+  <div class="pf-v5-c-backdrop" id="delete-all-modal" hidden>
+    <div class="pf-v5-l-bullseye">
+      <div class="pf-v5-c-modal-box pf-m-sm" role="dialog" aria-modal="true" aria-labelledby="delete-all-title">
+        <header class="pf-v5-c-modal-box__header">
+          <h1 class="pf-v5-c-modal-box__title" id="delete-all-title">Delete all respondents?</h1>
+        </header>
+        <div class="pf-v5-c-modal-box__body">
+          This deletes every application, stakeholder and readout task in MTA, with their assessments, readouts
+          and summaries. The questionnaire and the tags stay. It cannot be undone.
+        </div>
+        <footer class="pf-v5-c-modal-box__footer">
+          <button class="pf-v5-c-button pf-m-danger" type="button" id="delete-all-confirm">Delete all</button>
+          <button class="pf-v5-c-button pf-m-link" type="button" id="delete-all-cancel">Cancel</button>
+        </footer>
+      </div>
+    </div>
   </div>
   <script>
     const form = document.getElementById("start");
@@ -333,8 +320,7 @@
     const respondentRows = document.getElementById("respondents");
     const maintenanceStatus = document.getElementById("maintenance-status");
     const generateAll = document.getElementById("generate-all");
-    const clear = document.getElementById("clear");
-    const confirmation = document.getElementById("confirm");
+    const deleteAllModal = document.getElementById("delete-all-modal");
 
     function report(kind, title) {
       maintenanceStatus.className = `pf-v5-c-alert pf-m-inline pf-m-${kind}`;
@@ -414,20 +400,22 @@
       }
     });
 
-    confirmation.addEventListener("input", () => {
-      clear.querySelector("button").disabled = confirmation.value !== "delete all respondents";
+    document.getElementById("delete-all").addEventListener("click", () => {
+      deleteAllModal.hidden = false;
     });
 
-    clear.addEventListener("submit", async (event) => {
-      event.preventDefault();
+    document.getElementById("delete-all-cancel").addEventListener("click", () => {
+      deleteAllModal.hidden = true;
+    });
+
+    document.getElementById("delete-all-confirm").addEventListener("click", async () => {
+      deleteAllModal.hidden = true;
       try {
-        const { removed } = await api("respondents", { confirm: confirmation.value }, "DELETE");
+        const { removed } = await api("respondents", { confirm: "delete all respondents" }, "DELETE");
         report("success", `Deleted ${removed} respondents`);
       } catch (reason) {
         report("danger", reason.message);
       }
-      clear.reset();
-      clear.querySelector("button").disabled = true;
       listRespondents();
       listOrganisations();
     });
