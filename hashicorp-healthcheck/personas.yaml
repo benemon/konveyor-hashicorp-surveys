@@ -9,7 +9,7 @@
   presented: [Infrastructure Lifecycle, Machine Identity and Secrets, Service Networking]
   adjacent: {}
   solution_adjacency: []
-  patterns: [Network rules without service identity]
+  patterns: [Network rules with a manual certificate lifecycle]
   overall: red
 
 - name: "B: mature OpenShift platform, static secrets"
@@ -58,7 +58,7 @@
   adjacent:
     Machine Identity and Secrets: [Human Access]
   solution_adjacency: [Human Access]
-  patterns: ["Controlled path, uncontrolled credentials"]
+  patterns: ["Controlled path, standing credentials"]
   overall: red
 
 - name: "G: capable platform with contradictions"
@@ -102,3 +102,14 @@
   solution_adjacency: [Service Networking]
   patterns: ["Deployment is standardised, networking is not"]
   overall: green
+
+- name: "J: segmented network, no internal certificates"
+  answers: [3, 4, 4, 4, 4, 4, 4, 4, 4, 3, 4, 1, 4, 4]
+  direct:
+    Service Networking: strong
+  presented: [Service Networking]
+  adjacent:
+    Machine Identity and Secrets: [Service Networking]
+  solution_adjacency: [Service Networking]
+  patterns: [Network rules without service identity]
+  overall: red

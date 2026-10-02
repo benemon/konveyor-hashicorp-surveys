@@ -5,7 +5,7 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
-from readout import FOLLOW_UP
+from readout import FOLLOW_UP, VERSION
 
 COVER = Path(__file__).with_name("cover.pdf")
 # Name of the summary in the application's bucket in MTA.
@@ -56,6 +56,7 @@ def markdown(organisation, readout):
         "---",
         f"title: {json.dumps(organisation + ': 5 Minute HashiCorp Healthcheck')}",
         f"date: {json.dumps(day)}",
+        f"subject: {json.dumps('healthcheck-v' + VERSION)}",
         "lang: en-GB",
         "papersize: a4",
         'mainfont: "IBM Plex Sans"',
@@ -79,16 +80,20 @@ def markdown(organisation, readout):
         f"Healthcheck on {day}. The healthcheck asks fourteen questions about how infrastructure is "
         "delivered, secured, connected and run.",
         "",
-        "Each response that highlighted an opportunity for improvement appears below under the area it "
-        "belongs to, with the reason it matters and a direction for improvement.",
-        "",
-        "These results come from a short questionnaire. They show where further discussion would benefit "
-        f"{escaped(organisation)}.",
-        "",
     ]
+    if areas:
+        lines += [
+            "Each response that highlighted an opportunity for improvement appears below under the area it "
+            "belongs to, with the reason it matters and a direction for improvement.",
+            "",
+            "These results come from a short questionnaire. They show where further discussion would benefit "
+            f"{escaped(organisation)}.",
+            "",
+        ]
+    else:
+        lines += ["These results come from a short questionnaire. No areas were highlighted.", ""]
     lines += summary_table([
         ("Environment", readout["environment"]),
-        ("Overall result", readout["verdict"]),
         ("Areas highlighted", [f"- {a['capability']} ({a['strength']})" for a in areas] or "None"),
         ("No signal in", [f"- {c}" for c in readout["in_good_shape"]] or "None"),
     ])
@@ -115,10 +120,9 @@ def markdown(organisation, readout):
     if readout["unknowns"]:
         lines += ["", "# Not answered", ""]
         lines += [f"- {u['question']}" for u in readout["unknowns"]]
-    lines += needspace(4 + sum(4 + len(FOLLOW_UP[a["capability"]]["roles"]) for a in areas))
-    lines += ["# Suggested next steps", ""]
-    if not areas:
-        lines.append("No area was highlighted, so this healthcheck suggests no follow-up session.")
+    if areas:
+        lines += needspace(4 + sum(4 + len(FOLLOW_UP[a["capability"]]["roles"]) for a in areas))
+        lines += ["# Suggested next steps", ""]
     for number, area in enumerate(areas, 1):
         follow_up = FOLLOW_UP[area["capability"]]
         topics = follow_up["topics"][0].lower() + follow_up["topics"][1:]

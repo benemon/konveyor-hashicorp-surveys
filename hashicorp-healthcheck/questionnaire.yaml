@@ -87,9 +87,9 @@ sections:
     explanation: Standards include security rules, cost limits, naming and approved configurations. Choose how they are usually checked when infrastructure is created or changed.
     answers:
     - order: 1
-      text: By manual review, or after the fact when a problem is found
+      text: Mostly after deployment, when a problem, audit or review identifies it
       risk: red
-      rationale: Standards checked by hand or after the event allow non-compliant infrastructure to reach production and make remediation expensive.
+      rationale: Standards checked after deployment allow non-compliant infrastructure to reach production and make remediation expensive.
       mitigation: Express standards as automated checks that run before infrastructure changes are applied.
       applyTags:
       - category: Answer Key
@@ -310,7 +310,7 @@ sections:
     - order: 1
       text: Directly from the corporate network, with nothing in between
       risk: red
-      rationale: When any machine on the corporate network can reach administrative interfaces directly, a single compromised device or account has a wide reach.
+      rationale: Direct administrative access relies heavily on network controls and makes central authorisation per user and per system harder to enforce consistently.
       mitigation: Place an identity-aware access layer in front of administrative interfaces so that connections are authorised per system.
       applyTags:
       - category: Answer Key
@@ -356,7 +356,7 @@ sections:
     - order: 1
       text: Shared accounts, keys or passwords
       risk: red
-      rationale: Shared credentials cannot be attributed to an individual, are difficult to withdraw when someone leaves, and tend to spread beyond their intended users.
+      rationale: A shared credential does not identify the individual using it, so attribution depends on separate access records. Shared credentials are also harder to rotate and withdraw safely.
       mitigation: Replace shared credentials with access tied to individual identity, and issue the underlying credentials centrally so that they can be rotated.
       applyTags:
       - category: Answer Key
@@ -418,7 +418,7 @@ sections:
       - category: Capability Signal
         tag: Human Access
     - order: 3
-      text: Yes; sessions are centrally logged or recorded
+      text: Yes; session activity is centrally logged or recorded
       risk: green
       applyTags:
       - category: Answer Key
@@ -581,7 +581,7 @@ sections:
     - order: 1
       text: On individually managed servers, by hand or with scheduled scripts
       risk: red
-      rationale: Workloads run on individually managed servers go without automated placement and recovery, use capacity inefficiently, and tend to be left out of modernisation.
+      rationale: Host-by-host operation leaves these workloads without automated placement and recovery, and keeps their operation separate from the main platform.
       mitigation: Bring these workloads under a scheduler that handles placement, restarts and capacity, without requiring them to be rewritten.
       applyTags:
       - category: Answer Key
@@ -591,7 +591,7 @@ sections:
     - order: 2
       text: On separate platforms or tools for each type
       risk: yellow
-      rationale: A separate platform for each workload type fragments operations and leaves capacity stranded between them.
+      rationale: A separate platform for each workload type fragments tooling, operating practices and capacity management.
       mitigation: Consolidate how different workload types are scheduled and operated, so that they share tooling and capacity.
       applyTags:
       - category: Answer Key
@@ -623,5 +623,5 @@ thresholds:
 riskMessages:
   red: 'Strong signal in at least one area: a follow-up discussion is indicated'
   yellow: 'Moderate signals: areas worth exploring further'
-  green: No deeper session indicated by this healthcheck
+  green: No strong or repeated signal overall
   unknown: Not enough information for a clear signal

@@ -84,6 +84,16 @@ def insights(result):
                     [area["capability"], *item["pointers"]],
                     effort,
                 )
+    for adjacent in result["adjacent"]:
+        answers = "\n".join(f"- **{a['facet'].capitalize()}**: {a['answer']}. {a['note']}" for a in adjacent["answers"])
+        yield insight(
+            f"adjacent: {adjacent['capability']}",
+            f"Adjacent signal: {adjacent['capability']}",
+            f"Derived from responses given under {', '.join(adjacent['via'])}. It is not a direct finding.\n\n{answers}",
+            "Adjacent",
+            "; ".join(a["answer"] for a in adjacent["answers"]),
+            [adjacent["capability"]],
+        )
     for pattern in result["patterns"]:
         answers = "\n".join(f"- **{a['facet'].capitalize()}**: {a['answer']}" for a in pattern["answers"])
         yield insight(

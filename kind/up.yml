@@ -165,6 +165,20 @@
         values:
           appName: tackle
 
+    # The image tag does not change, so a rebuilt image is picked up by a restart.
+    - name: Restart Healthcheck Console on the rebuilt image
+      kubernetes.core.k8s:
+        state: patched
+        kind: Deployment
+        namespace: "{{ namespace }}"
+        name: healthcheck-console
+        definition:
+          spec:
+            template:
+              metadata:
+                annotations:
+                  restarted-at: "{{ now(utc=true).isoformat() }}"
+
     - name: Wait for the setup job
       kubernetes.core.k8s_info:
         kind: Job

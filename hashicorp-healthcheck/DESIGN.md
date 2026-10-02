@@ -78,8 +78,10 @@ An adjacent signal is evidence from another capability's question that also expo
 
 - Adjacent ranks below moderate.
 - A capability with a direct signal absorbs its adjacent signal.
+- A capability with an adjacent signal is not reported as having no signal.
 - Adjacent tags do not change answer colours or the overall result.
-- An adjacent signal is reported with its source capabilities, for example "Machine Identity and Secrets: adjacent, via Human Access".
+- Every adjacent signal is reported, with its source capabilities and the answers behind it, for example "Machine Identity and Secrets: adjacent, via Human Access".
+- Adjacent signals are for the facilitator. They appear in MTA and not in the executive summary.
 
 The cross-tag table is exhaustive.
 
@@ -113,35 +115,38 @@ With 14 to 16 questions this gives:
 | red | one or more red answers | Follow-up discussion indicated |
 | yellow | no red, two or more yellow | Areas worth exploring |
 | unknown | neither of the above, four or more unknown | Not enough information for a signal |
-| green | otherwise | No deeper session indicated by this healthcheck |
+| green | otherwise | No strong or repeated signal overall |
 
 `riskMessages` carries these in signal language. One red answer makes the overall result red. Q1 is unscored but counts in the denominator.
+
+The overall result is a triage status in MTA. One yellow answer leaves it green while its capability has a moderate signal, so the executive summary does not show it and leads with the capability signals.
 
 ### 4.7 Presentation
 
 1. Strong signals, then moderate.
 2. Within a tier, the capability with more red answers first, then more yellow answers, then the order IL, MIS, HA, SN, WL.
 3. At most three direct areas.
-4. At most one adjacent area, only for a capability with no direct signal. Where several qualify, the one with the most source capabilities, ties broken by the order above.
+4. Adjacent areas, only for capabilities with no direct signal, in the order above. They are facilitator guidance and are not presented to the respondent.
 5. The solution adjacency note, if it applies, after the areas.
 
 ### 4.8 Patterns
 
-A pattern is a combination of answers that says something neither answer says alone. Two gaps occurring together are not a pattern. The list is fixed, and a readout reports each pattern whose conditions hold. Patterns are prompts for the follow-up conversation. They do not affect risk, tags or signal strength.
+A pattern is a combination of answers that says something neither answer says alone. Its name and detail state only what every combination of answers that triggers it establishes. Two gaps occurring together are not a pattern. The list is fixed, and a readout reports each pattern whose conditions hold. Patterns are prompts for the follow-up conversation. They do not affect risk, tags or signal strength.
 
 | Pattern | Holds when | Meaning | Areas |
 |---|---|---|---|
-| Automation stops at day one | `provisioning` is `fragmented-code` or `shared-code`, and `change and drift` is `by-hand` or `mixed` | Infrastructure is provisioned as code, but later changes are made by hand. | IL |
-| Automated delivery without guardrails | `provisioning` is `fragmented-code` or `shared-code`, and `guardrails` is `after-the-fact` or `per-team` | Infrastructure is delivered as code, but standards are checked by hand or team by team. | IL |
+| Automation stops at day one | `provisioning` is `fragmented-code` or `shared-code`, and `change and drift` is `by-hand` or `mixed` | Infrastructure is provisioned as code, but day-two changes still bypass the automated lifecycle. | IL |
+| Automated delivery without guardrails | `provisioning` is `fragmented-code` or `shared-code`, and `guardrails` is `after-the-fact` or `per-team` | Infrastructure is delivered as code, but standards are checked after deployment or team by team. | IL |
 | Automated delivery with a human gate | `provisioning` is `fragmented-code` or `shared-code`, and `guardrails` is `central-approval` | Infrastructure delivery is automated, but every change still waits for a central team to approve it by hand. | IL |
 | Centralised but static | `secret storage` is `central-store`, and `rotation` is `manual-schedule` or `rarely` | Secrets are held in one central store, but credentials are long-lived or rotated by hand. | MIS |
-| Controlled path, uncontrolled credentials | `access path` is `brokered`, and `access credentials` is `personal-long-lived` or `shared` | Access is brokered to specific systems, but the credentials used are shared or long-lived. | MIS, HA |
-| Identity without session accountability | `access credentials` is `per-session` or `single-sign-on`, and `visibility` is `none` or `who-only` | Access is tied to an individual or issued per session, but what was done in a session cannot be fully shown afterwards. | HA |
+| Controlled path, standing credentials | `access path` is `brokered`, and `access credentials` is `personal-long-lived` or `shared` | Access is brokered to specific systems, but the credentials used are shared or long-lived. | MIS, HA |
+| Identity without session accountability | `access credentials` is `per-session` or `single-sign-on`, and `visibility` is `none` or `who-only` | Target access uses organisational identity or session-scoped credentials, but privileged activity cannot be fully reconstructed afterwards. | HA |
 | Trust by network location | `access path` is `direct` or `vpn`, and `service-to-service security` is `network-location` | Engineer access and traffic between services both rest on being inside the network. | HA, SN |
 | Distributed estate, fragmented control planes | `environment` is `hybrid` or `several-clouds`, and at least two of: `discovery` is `per-environment`; `service-to-service security` is `per-environment`; `deployment` is `per-platform` | Workloads span several environments, and discovery, traffic policy or deployment is done differently in each. | SN, WL |
 | Deployment is standardised, networking is not | `deployment` is `one-workflow`, and one of: `discovery` is `per-environment`; `service-to-service security` is `per-environment` | Workloads are deployed through one consistent workflow across platforms, but discovery or traffic policy still differs by environment. | SN |
 | Non-standard workloads sit outside the main platform | `deployment` is `one-platform`, and `non-standard workloads` is `individual-servers` or `separate-platforms` | The main platform meets most needs, but batch, legacy or non-containerised workloads are run by hand or on separate tooling. | WL |
-| Network rules without service identity | `service-to-service security` is `manual-rules` or `network-location`, and `certificates` is `by-hand` or `not-used` or `partly-automated` | Traffic between services is controlled by network location or hand-maintained rules, and certificate-based service identity is absent, uneven or manual. | MIS, SN |
+| Network rules without service identity | `service-to-service security` is `manual-rules` or `network-location`, and `certificates` is `not-used` | Traffic between services is controlled by network location or hand-maintained rules, and internal services do not commonly use certificates. | MIS, SN |
+| Network rules with a manual certificate lifecycle | `service-to-service security` is `manual-rules` or `network-location`, and `certificates` is `by-hand` or `partly-automated` | Traffic between services is controlled by network location or hand-maintained rules, and the certificates that could identify services are issued by hand or unevenly. | MIS, SN |
 
 A spread estate served by one platform is not a pattern: one platform can span environments.
 
@@ -159,10 +164,12 @@ The `healthcheck-readout` addon derives the readout from a completed assessment.
 
 The addon cannot read the assessment itself. The Healthcheck Console service reads it, with the message for its overall result, and submits them to the addon as the task's data.
 
+`version` in `readout.py` names the questionnaire wording and readout rules in force, and is raised when either changes. Each result carries it, because an assessment keeps the questionnaire it was answered with and a readout can be generated long after.
+
 Running the addon again replaces its previous output. The addon writes to the application:
 
-- an analysis with one entry per red or yellow answer and one per pattern. Each answer is entered twice, with an effort of 1 for Issues and with none for Insights. Patterns are entered for Insights only. An application's effort is therefore its number of gaps. An entry's target technologies are the capabilities and products it relates to. Its description carries the rationale, the mitigation and the capability pointers, and for a pattern the answers behind it;
-- facts under the source `healthcheck-readout`: `environment`, `verdict`, `direct`, `areas` (every area with a signal, ranked, with its product, strength, facets and evidence), `presented`, `adjacent`, `implementation`, `patterns`, `in_good_shape`, `unknowns`, `follow_up` (topics, roles, product and talk track for each presented area) and `generated`;
+- an analysis with one entry per red or yellow answer, one per pattern and one per adjacent signal. Each answer is entered twice, with an effort of 1 for Issues and with none for Insights. Patterns and adjacent signals are entered for Insights only. An adjacent signal's entry is in the category `Adjacent`, names its source capabilities and says that it is not a direct finding. An application's effort is therefore its number of gaps. An entry's target technologies are the capabilities and products it relates to. Its description carries the rationale, the mitigation and the capability pointers, and for a pattern the answers behind it;
+- facts under the source `healthcheck-readout`: `version`, `environment`, `verdict`, `direct`, `areas` (every area with a signal, ranked, with its product, strength, facets and evidence), `presented`, `adjacent`, `implementation`, `patterns`, `in_good_shape`, `unknowns`, `follow_up` (topics, roles, product and talk track for each presented area) and `generated`;
 - an executive summary as a PDF, `healthcheck-summary.pdf` in the application's bucket (section 4.11);
 - one tag per capability with a direct signal, named for the product and the strength, such as `Vault: strong`. Each product has its own tag category, in the product's brand colour. The addon creates these categories on first use.
 
@@ -173,11 +180,13 @@ The summary is the document sent to the respondent after the session. `healthche
 It contains:
 
 1. a title page with the organisation and the date the readout was generated;
-2. an introduction, with a table of the environment, the overall result, the areas highlighted and the areas with no signal;
+2. an introduction, with a table of the environment, the areas highlighted and the areas with no signal;
 3. one section per area with a signal, in ranked order, with a row per red or yellow answer: the aspect, the answer given, and its rationale and mitigation. A section is not split across pages;
 4. the patterns that hold;
 5. the questions answered "unknown";
 6. a next step per area, naming the product and the roles worth involving.
+
+When no area has a signal, the introduction says so, and the summary has no next steps and makes no claim that further discussion would help.
 
 The summary names products only in its next steps. It carries no capability pointers and no talk tracks, which are for the facilitator.
 
@@ -218,7 +227,7 @@ Q1 is context. It opens the conversation and helps the facilitator read the late
 
 | # | Answer | Key | Risk | Direct | Adjacent |
 |---|---|---|---|---|---|
-| 1 | By manual review, or after the fact when a problem is found | `after-the-fact` | red | IL |  |
+| 1 | Mostly after deployment, when a problem, audit or review identifies it | `after-the-fact` | red | IL |  |
 | 2 | Each team applies its own checks | `per-team` | yellow | IL |  |
 | 3 | A central team reviews and approves changes by hand | `central-approval` | yellow | IL |  |
 | 4 | Automated checks run on every change, and teams self-serve within them | `automated` | green |  |  |
@@ -294,7 +303,7 @@ This question covers certificate lifecycle where certificates exist. Whether the
 |---|---|---|---|---|---|
 | 1 | No, or only by piecing together logs from several places | `none` | red | HA |  |
 | 2 | Who connected, yes; what they did, no | `who-only` | yellow | HA |  |
-| 3 | Yes; sessions are centrally logged or recorded | `recorded` | green |  |  |
+| 3 | Yes; session activity is centrally logged or recorded | `recorded` | green |  |  |
 | 4 | I don't know | `unknown` | unknown |  |  |
 
 ### Section 4: Runtime and Connectivity
@@ -364,12 +373,15 @@ Structure of the questionnaire:
 - Capability pointers exist for exactly the red and yellow answers, and each lists its capability's own product first.
 - No string in the questionnaire contains Terraform, Vault, Boundary, Consul, Nomad or HashiCorp, apart from the questionnaire's name.
 
-Personas, in `personas.yaml`: nine reference respondents, each with its answers and its expected direct signals, presented areas, adjacent signal, solution adjacency, patterns and overall result.
+Personas, in `personas.yaml`: ten reference respondents, each with its answers and its expected direct signals, presented areas, adjacent signal, solution adjacency, patterns and overall result.
 
 - Every persona's readout equals its expected values. The overall result is computed with the threshold rule in section 3.
 - Every pattern holds for at least one persona.
 - For every persona, the gaps reported are exactly its red and yellow answers, with their wording.
 - For every persona, the executive summary has a section for each area with a signal and a row for each of its answers.
+- For every persona, no area with a direct or adjacent signal is reported as having no signal.
+- For every persona, the summary says further discussion would benefit the organisation, and lists next steps, only when an area is highlighted.
+- The summary does not contain the overall result's message.
 
 | Persona | Shows |
 |---|---|
@@ -382,6 +394,7 @@ Personas, in `personas.yaml`: nine reference respondents, each with its answers 
 | G: capable platform with contradictions | Four patterns; ordering within the strong tier |
 | H: hybrid estate, partly standardised | Three moderate signals and three patterns |
 | I: consistent deployment, uneven networking | One yellow answer: a moderate signal with an overall result of green |
+| J: segmented network, no internal certificates | A pattern that rests on a green answer; an adjacent signal from Service Networking |
 
 ## 7. Repository layout
 
