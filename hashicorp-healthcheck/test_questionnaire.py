@@ -170,9 +170,6 @@ class Structure(unittest.TestCase):
         }
         self.assertEqual(found, CROSS_TAGS)
         self.assertEqual(set(ADJACENCY), set(CROSS_TAGS))
-        for key, adjacent in CROSS_TAGS.items():
-            for capability in adjacent:
-                self.assertIn(FOLLOW_UP[capability]["product"], readout.POINTERS[key], key)
 
     def test_rationale_and_mitigation(self):
         for question in QUESTIONS:
@@ -191,6 +188,15 @@ class Structure(unittest.TestCase):
         self.assertEqual(set(readout.POINTERS), set(gaps))
         for key, capability in gaps.items():
             self.assertEqual(next(iter(readout.POINTERS[key])), readout.FOLLOW_UP[capability]["product"], key)
+
+    def test_pointers_name_only_the_products_an_answer_establishes(self):
+        for question in SCORED:
+            for answer in question["answers"]:
+                if answer["risk"] not in ("red", "yellow"):
+                    continue
+                key = next(iter(tags(answer, KEY)))
+                established = {FOLLOW_UP[c]["product"] for c in tags(answer, DIRECT) | tags(answer, ADJACENT)}
+                self.assertEqual(set(readout.POINTERS[key]), established, key)
 
     def test_capability_order(self):
         self.assertEqual(
