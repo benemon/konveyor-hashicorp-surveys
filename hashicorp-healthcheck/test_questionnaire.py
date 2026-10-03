@@ -279,6 +279,45 @@ class Personas(unittest.TestCase):
         self.assertEqual([p["name"] for p in result["patterns"]], ["Network rules with a manual certificate lifecycle"])
         self.assertEqual(result["adjacent"], [])
 
+    def test_pattern_capabilities_come_from_matched_answers(self):
+        for persona in PERSONAS:
+            chosen = {
+                next(iter(tags(q["answers"][n - 1], KEY))).split(": ")[0]: q["answers"][n - 1]
+                for q, n in zip(QUESTIONS, persona["answers"])
+            }
+            for pattern in readout.build(select(persona["answers"]), "")["patterns"]:
+                with self.subTest(persona["name"], pattern=pattern["name"]):
+                    matched = [chosen[a["facet"]] for a in pattern["answers"]]
+                    expected = set().union(*(tags(a, DIRECT) | tags(a, ADJACENT) for a in matched))
+                    self.assertEqual(set(pattern["capabilities"]), expected)
+                    self.assertEqual(pattern["products"], [readout.FOLLOW_UP[c]["product"] for c in pattern["capabilities"]])
+                    for answer in matched:
+                        if answer["risk"] not in ("red", "yellow"):
+                            self.assertFalse(tags(answer, DIRECT) | tags(answer, ADJACENT), answer["text"])
+
+    def test_networking_evidence_never_surfaces_vault(self):
+        baseline = next(p for p in PERSONAS if p["name"].startswith("D"))["answers"]
+        facets = {next(iter(tags(q["answers"][0], KEY))).split(": ")[0]: i for i, q in enumerate(QUESTIONS)}
+        networking = QUESTIONS[facets["service-to-service security"]]
+        certificates = QUESTIONS[facets["certificates"]]
+        not_used = next(a["order"] for a in certificates["answers"] if tags(a, KEY) == {"certificates: not-used"})
+        for answer in networking["answers"]:
+            if answer["risk"] not in ("red", "yellow"):
+                continue
+            for cert in (baseline[facets["certificates"]], not_used):
+                answers = list(baseline)
+                answers[facets["service-to-service security"]] = answer["order"]
+                answers[facets["certificates"]] = cert
+                result = readout.build(select(answers), "")
+                with self.subTest(answer["text"], certificates=cert):
+                    self.assertEqual(result["direct"], {"Service Networking": "strong" if answer["risk"] == "red" else "moderate"})
+                    for area in result["areas"]:
+                        for e in area["evidence"]:
+                            self.assertNotIn("Vault", e["pointers"])
+                    for pattern in result["patterns"]:
+                        self.assertNotIn("Vault", pattern["products"])
+                        self.assertNotIn("Vault", pattern["pointers"])
+
     def test_every_pattern_holds_for_some_persona(self):
         expected = {name for persona in PERSONAS for name in persona["patterns"]}
         self.assertEqual(expected, {pattern["name"] for pattern in readout.PATTERNS})
