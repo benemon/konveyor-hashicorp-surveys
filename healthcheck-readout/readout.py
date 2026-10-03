@@ -4,7 +4,7 @@ DIRECT = "Capability Signal"
 ADJACENT = "Adjacent Capability Signal"
 # Identifies the interpretation and rendering rules that produced a result. The questionnaire
 # has its own version, carried in the assessment.
-VERSION = "0.9"
+VERSION = "0.10"
 
 # "<facet>: <key>", one per answer. The category is never created in MTA, so the hub keeps
 # the tag in the assessment but off applications.
@@ -131,6 +131,7 @@ FOLLOW_UP = {
         "topics": "How infrastructure is provisioned, governed and changed after day one",
         "roles": ["Platform or infrastructure engineering lead"],
         "product": "Terraform",
+        "editions": "HCP Terraform and Terraform Enterprise",
         "colour": "#7B42BC",
         "talk_track": "Drift detection identifies divergence but does not remediate it automatically. Remediation "
         "returns through a run, once it is decided whether the external change is kept or overwritten. Where "

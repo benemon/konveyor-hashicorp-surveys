@@ -5,6 +5,7 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
+from pointers import FEATURES
 from readout import FOLLOW_UP
 
 COVER = Path(__file__).with_name("cover.pdf")
@@ -19,7 +20,15 @@ SAMPLE = {
         {
             "capability": "Human Access",
             "strength": "strong",
-            "evidence": [{"facet": "f", "answer": "a", "rationale": "r", "mitigation": "m"}],
+            "evidence": [
+                {
+                    "facet": "f",
+                    "answer": "a",
+                    "rationale": "r",
+                    "mitigation": "m",
+                    "pointers": {"Boundary": ["Targets"]},
+                }
+            ],
         }
     ],
     "presented": ["Human Access"],
@@ -63,6 +72,16 @@ def summary_table(rows):
 def mark(product):
     logo = LOGOS / f"{product}.pdf"
     return f"![]({logo}){{height=1.1em}} " if logo.exists() else ""
+
+
+def footnote(url, noted):
+    """Returns the mark for a documentation link: a footnote the first time, then that footnote's number again."""
+    if url not in noted:
+        # The summary has no other footnotes, so the nth link is footnote n.
+        noted[url] = len(noted) + 1
+        # Inside another macro's argument, url wants # and % escaped.
+        return f"`\\footnote{{\\url{{{url.replace('#', '\\#').replace('%', '\\%')}}}}}`{{=latex}}"
+    return f"`\\footnotemark[{noted[url]}]`{{=latex}}"
 
 
 def needspace(count):
@@ -119,11 +138,9 @@ def markdown(organisation, readout):
     ]
     if areas:
         lines += [
-            "These results come from a short questionnaire. They show where further discussion would benefit "
-            f"{escaped(organisation)}.",
-            "",
-            "Each response that highlighted an opportunity for improvement appears below under the area it "
-            "belongs to, with what it means and a suggested change.",
+            "These results come from a short questionnaire and show where further discussion would benefit "
+            f"{escaped(organisation)}. Each response that highlighted an opportunity for improvement appears below "
+            "under its area, with what it means and a suggested change.",
             "",
         ]
     else:
@@ -161,18 +178,30 @@ def markdown(organisation, readout):
         lines += ["", "# Not answered", ""]
         lines += [f"- {u['question']}" for u in readout["unknowns"]]
     if areas:
-        lines += needspace(4 + sum(4 + len(FOLLOW_UP[a["capability"]]["roles"]) for a in presented))
+        lines += needspace(8)
         lines += ["# Suggested next steps", ""]
+    noted = {}
     for number, area in enumerate(presented, 1):
         follow_up = FOLLOW_UP[area["capability"]]
-        topics = follow_up["topics"][0].lower() + follow_up["topics"][1:]
+        editions = f", in {follow_up['editions']}" if "editions" in follow_up else ""
         lines += [
             f"{number}. {mark(follow_up['product'])}**{area['capability']}.** A follow-up session on "
-            f"{follow_up['product']}, covering {topics}. Worth involving:",
+            f"{follow_up['product']} is recommended. The features it would cover{editions}:",
             "",
         ]
-        lines += [f"    - {role}" for role in follow_up["roles"]]
-        lines.append("")
+        shown = set()
+        for e in area["evidence"]:
+            sentences = []
+            for name in (f for features in e["pointers"].values() for f in features):
+                if name in shown:
+                    continue
+                shown.add(name)
+                sentence, url = FEATURES[name]
+                sentences.append(sentence + footnote(url, noted))
+            if sentences:
+                lines += [f"    **{e['facet'].capitalize()}.** {' '.join(sentences)}", ""]
+        roles = ", ".join(role[0].lower() + role[1:] for role in follow_up["roles"])
+        lines += [f"    Worth involving: {roles}.", ""]
     if readout["implementation"]:
         product = FOLLOW_UP[readout["implementation"]["capability"]]["product"]
         lines += [

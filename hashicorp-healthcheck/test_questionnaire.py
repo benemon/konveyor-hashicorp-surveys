@@ -10,6 +10,7 @@ import yaml
 HERE = Path(__file__).parent
 # The addon's logic is the single implementation of the signal model.
 sys.path.insert(0, str(HERE.parent / "healthcheck-readout"))
+import pointers  # noqa: E402
 import readout  # noqa: E402
 import summary  # noqa: E402
 from readout import ADJACENCY, ADJACENT, CAPABILITIES, DIRECT, FOLLOW_UP, KEY, QUESTIONNAIRE_VERSION, tags  # noqa: E402
@@ -198,6 +199,13 @@ class Structure(unittest.TestCase):
                 established = {FOLLOW_UP[c]["product"] for c in tags(answer, DIRECT) | tags(answer, ADJACENT)}
                 self.assertEqual(set(readout.POINTERS[key]), established, key)
 
+    def test_pointers_name_catalogued_features_with_hashicorp_documentation(self):
+        named = {f for products in readout.POINTERS.values() for features in products.values() for f in features}
+        self.assertEqual(named, set(pointers.FEATURES))
+        for name, (sentence, url) in pointers.FEATURES.items():
+            self.assertTrue(url.startswith("https://developer.hashicorp.com/"), name)
+            self.assertRegex(sentence, r"^[A-Za-z].*\.$", name)
+
     def test_capability_order(self):
         self.assertEqual(
             CAPABILITIES,
@@ -355,6 +363,10 @@ class Personas(unittest.TestCase):
                     self.assertEqual(f"**{area['capability']}.** A follow-up session" in text, shown)
                     for e in area["evidence"]:
                         self.assertEqual(f"| {e['answer']} |" in text, shown)
+                        for name in (f for features in e["pointers"].values() for f in features):
+                            sentence, url = pointers.FEATURES[name]
+                            self.assertEqual(sentence in text, shown, name)
+                            self.assertEqual(text.count(f"\\url{{{url.replace('#', '\\#')}}}"), int(shown), name)
                 self.assertEqual("areas highlighted are covered in detail" in text, len(result["areas"]) > 3)
 
     def test_presentation_cap(self):

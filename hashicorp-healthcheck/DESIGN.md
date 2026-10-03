@@ -169,7 +169,9 @@ A spread estate served by one platform is not a pattern: one platform can span e
 
 ### 4.9 Capability pointers
 
-Each red or yellow answer has capability pointers: the capabilities of its direct capability's product, and of an adjacent capability's product where the answer carries an adjacent tag, that a facilitator can discuss if the respondent asks what an improvement would look like. A product the answer does not establish has no pointers, however well it integrates with one that does. They are held in `healthcheck-readout/pointers.py` by answer key. Each product also has a short talk track.
+Each red or yellow answer has capability pointers: the features of its direct capability's product, and of an adjacent capability's product where the answer carries an adjacent tag, that a facilitator can discuss if the respondent asks what an improvement would look like. A product the answer does not establish has no pointers, however well it integrates with one that does. They are held in `healthcheck-readout/pointers.py` by answer key, as feature names. Each product also has a short talk track.
+
+Every feature a pointer names is in the feature catalogue in the same file: its name as the documentation uses it, one sentence saying what it does, and the page on developer.hashicorp.com that documents it. The sentence is neutral, present tense and names the edition where a feature is not in every edition of its product. A feature with no HashiCorp documentation page is not catalogued. The catalogue is the only description of a feature: the summary and the Insights print the same sentence and link.
 
 A pattern's pointers are those of the answers behind it.
 
@@ -185,7 +187,7 @@ The addon cannot read the assessment itself. The Healthcheck Console service rea
 
 Running the addon again replaces its previous output. The addon writes to the application:
 
-- an analysis with one entry per red or yellow answer, one per pattern and one per adjacent signal. Each answer is entered twice, with an effort of 1 for Issues and with none for Insights. Patterns and adjacent signals are entered for Insights only. An adjacent signal's entry is in the category `Adjacent`, names its source capabilities and says that it is not a direct finding. An application's effort is therefore its number of gaps. An entry's target technologies are the capabilities and products it relates to. Its description carries the rationale, the mitigation and the capability pointers, and for a pattern the answers behind it;
+- an analysis with one entry per red or yellow answer, one per pattern and one per adjacent signal. Each answer is entered twice, with an effort of 1 for Issues and with none for Insights. Patterns and adjacent signals are entered for Insights only. An adjacent signal's entry is in the category `Adjacent`, names its source capabilities and says that it is not a direct finding. An application's effort is therefore its number of gaps. An entry's target technologies are the capabilities and products it relates to. Its description carries the rationale, the suggested change and, for each feature its pointers name, the catalogue sentence and documentation link, under the feature's product; for a pattern it also carries the answers behind it;
 - facts under the source `healthcheck-readout`: `questionnaire_version`, `readout_version`, `environment`, `verdict`, `direct`, `areas` (every area with a signal, ranked, with its product, strength, facets and evidence), `presented`, `adjacent`, `implementation`, `patterns`, `in_good_shape`, `unknowns`, `follow_up` (topics, roles, product and talk track for each presented area) and `generated`;
 - an executive summary as a PDF, `healthcheck-summary.pdf` in the application's bucket (section 4.11);
 - one tag per capability with a direct signal, named for the product and the strength, such as `Vault: strong`. Each product has its own tag category, in the product's brand colour. The addon creates these categories on first use.
@@ -201,11 +203,11 @@ It contains:
 3. one section per presented area (section 4.7), in ranked order, with a row per red or yellow answer: the aspect, the response, what it means (the rationale) and the suggested change (the mitigation), in four columns. A section is not split across pages. When more areas have a signal, the section's heading is followed by a sentence saying that three of them are covered in detail, in order of strength;
 4. the patterns that hold;
 5. the questions answered "unknown";
-6. a next step per presented area, with the product's mark, naming the product and the roles worth involving.
+6. a next step per presented area, with the product's mark: a recommendation of a follow-up session on the product, then one paragraph per red or yellow answer made of the catalogue sentences of its pointers, each with its documentation page as a footnote, then the roles worth involving. A feature appears once per area, and a documentation page is footnoted once per summary; a later mention repeats the footnote's number.
 
 When no area has a signal, the introduction says so, and the summary has no next steps and makes no claim that further discussion would help.
 
-Every area with a signal remains in MTA. The summary names products only in its next steps. It carries no capability pointers and no talk tracks, which are for the facilitator.
+Every area with a signal remains in MTA. The summary names products only in its next steps, and features only through the catalogue sentences there. It carries no talk tracks, which are for the facilitator.
 
 The title page uses `healthcheck-readout/cover.pdf` as its background when the file is present at build time. The file is not in the repository.
 
@@ -433,6 +435,7 @@ Structure of the questionnaire:
 - Red and yellow answers have a rationale and a mitigation. Green and unknown answers have neither.
 - Every key a pattern refers to exists.
 - Capability pointers exist for exactly the red and yellow answers, each lists its capability's own product first, and each names exactly the products of the answer's direct and adjacent capabilities.
+- Every feature a pointer names is catalogued, and every catalogued feature is named by a pointer, with a one-sentence description and a documentation page on developer.hashicorp.com.
 - No string in the questionnaire contains Terraform, Vault, Boundary, Consul, Nomad or HashiCorp, apart from the questionnaire's name.
 
 Personas, in `personas.yaml`: ten reference respondents, each with its answers and its expected direct signals, presented areas, adjacent signal, solution adjacency, patterns and overall result.
@@ -450,7 +453,7 @@ Personas, in `personas.yaml`: ten reference respondents, each with its answers a
 - For every pattern a persona triggers, its capabilities equal the union of the direct and adjacent tags of its matched answers, and its products are those capabilities' products.
 - Service Networking evidence alone, with or without "certificates are not used", surfaces no Vault pointer and no Vault pattern product.
 - The summary does not contain the overall result's message.
-- The summary shows exactly the presented areas: persona A has five areas with a signal and three sections and next steps.
+- The summary shows exactly the presented areas: persona A has five areas with a signal and three sections and next steps. Each presented area's next step carries the catalogue sentence of every feature its pointers name, and each documentation page once.
 - The summary's metadata carries the versions in the readout it renders, not the running code's.
 - The sample readout the image build renders is accepted by the summary.
 - Single-gap matrix: from an all-green baseline, each red or yellow answer on its own gives exactly its capability's signal, its own evidence, its own adjacency and no pattern that does not involve it.
