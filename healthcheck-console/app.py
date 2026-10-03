@@ -11,7 +11,11 @@ MTA_HUB = os.environ["MTA_HUB"].rstrip("/")
 # Written by the chart's setup job after the pod may already be running, so it is read per call.
 API_KEY = Path("/etc/healthcheck-console/api-key")
 INDEX = (Path(__file__).parent / "index.html").read_bytes()
-STYLES = (Path(__file__).parent / "patternfly.min.css").read_bytes()
+# Fetched by the image build: the Helios stylesheet and an icon sprite.
+STATIC = {
+    "/hds.css": ((Path(__file__).parent / "hds.css").read_bytes(), "text/css"),
+    "/icons.svg": ((Path(__file__).parent / "icons.svg").read_bytes(), "image/svg+xml"),
+}
 # The route serves this path on MTA's own host, so links into MTA are same-origin and
 # keep the browser tab's MTA session.
 PREFIX = "/console"
@@ -252,8 +256,8 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(404, {"error": "not found"})
         elif path == "/":
             self.reply(200, INDEX, "text/html; charset=utf-8")
-        elif path == "/patternfly.min.css":
-            self.reply(200, STYLES, "text/css")
+        elif path in STATIC:
+            self.reply(200, *STATIC[path])
         elif path == "/api/questionnaires":
             self.call_mta(lambda: [q["name"] for q in questionnaires()])
         elif path == "/api/organisations":

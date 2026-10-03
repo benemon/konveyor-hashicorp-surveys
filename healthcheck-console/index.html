@@ -4,180 +4,229 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>HashiCorp Healthcheck Console</title>
-  <link rel="stylesheet" href="patternfly.min.css">
+  <!-- Helios, the HashiCorp design system: its stylesheet and Flight icons are fetched by the image build. -->
+  <link rel="stylesheet" href="hds.css">
   <style>
-    /* PatternFly sets display on these components, which overrides the hidden attribute. */
+    body {
+      margin: 0;
+      color: var(--token-color-foreground-primary);
+      font-family: var(--token-typography-font-stack-text);
+      background: var(--token-color-page-faint);
+    }
     [hidden] { display: none !important; }
-    .pf-v5-c-masthead__brand { color: var(--pf-v5-global--Color--light-100); font-size: var(--pf-v5-global--FontSize--xl); }
-    #readout-result ul { list-style: disc; padding-left: var(--pf-v5-global--spacer--lg); }
-    #readout-result a { display: block; }
+    /* The Flight sprite carries no size; Helios sizes icons through their context. */
+    .hds-icon { width: 16px; height: 16px; }
+    .hds-dialog-primitive__header .hds-icon { width: 24px; height: 24px; }
+    .console-main { max-width: 1120px; margin: 0 auto; padding: 32px 24px 48px; }
+    .console-mark { width: 32px; height: 32px; }
+    .console-logo-text { color: var(--token-color-foreground-high-contrast); text-decoration: none; }
+    .console-tabs { margin-top: 24px; }
+    .console-tabs .hds-tabs__tab-button { padding: 10px 16px; }
+    /* Contained content sits flush under the tabs, as the Helios tabs guidance describes. */
+    .console-panel { padding: 24px; border-top-left-radius: 0; border-top-right-radius: 0; }
+    .console-form { display: flex; flex-direction: column; gap: 16px; max-width: 480px; }
+    .console-form .hds-form-field--layout-vertical { display: flex; flex-direction: column; gap: 4px; }
+    .console-toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 16px; }
+    .console-toolbar .hds-button-set { gap: 12px; }
+    .console-alert { margin: 16px 0; }
+    .console-areas { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 0; padding: 0; list-style: none; }
+    .console-area { display: flex; gap: 12px; align-items: center; }
+    .console-area .hds-icon { flex: none; width: 24px; height: 24px; }
+    .console-patterns { margin: 8px 0 0; padding-left: 20px; }
+    .console-links { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px; }
+    .console-contact { margin: 4px 0 16px; color: var(--token-color-foreground-faint); }
+    .hds-dialog-primitive__header { justify-content: space-between; }
   </style>
 </head>
 <body>
-  <div class="pf-v5-c-page">
-    <header class="pf-v5-c-masthead">
-      <div class="pf-v5-c-masthead__main">
-        <span class="pf-v5-c-masthead__brand">HashiCorp Healthcheck Console</span>
+  <div class="hds-app-frame">
+    <header class="hds-app-frame__header">
+      <div class="hds-app-header">
+        <a class="hds-app-header__home-link" href="./" aria-label="HashiCorp Healthcheck Console">
+          <svg class="hds-icon console-mark" aria-hidden="true"><use href="icons.svg#hashicorp-24"></use></svg>
+        </a>
+        <div class="hds-app-header__actions">
+          <div class="hds-app-header__global-actions">
+            <a class="console-logo-text hds-typography-body-300 hds-font-weight-semibold" href="./">HashiCorp Healthcheck Console</a>
+          </div>
+        </div>
+        <div class="hds-app-header__utility-actions">
+          <a class="hds-button hds-button--size-small hds-button--color-secondary" href="/">
+            <span class="hds-button__text">Open the assessment platform</span>
+            <svg class="hds-icon hds-button__icon" aria-hidden="true"><use href="icons.svg#external-link-16"></use></svg>
+          </a>
+        </div>
       </div>
     </header>
-    <main class="pf-v5-c-page__main">
-      <section class="pf-v5-c-page__main-section pf-m-light">
-        <div class="pf-v5-c-tabs">
-          <ul class="pf-v5-c-tabs__list" role="tablist">
-            <li class="pf-v5-c-tabs__item pf-m-current" role="presentation">
-              <button class="pf-v5-c-tabs__link" type="button" role="tab" data-panel="start-panel">
-                <span class="pf-v5-c-tabs__item-text">Start an assessment</span>
-              </button>
-            </li>
-            <li class="pf-v5-c-tabs__item" role="presentation">
-              <button class="pf-v5-c-tabs__link" type="button" role="tab" data-panel="readout-panel">
-                <span class="pf-v5-c-tabs__item-text">Generate a readout</span>
-              </button>
-            </li>
-            <li class="pf-v5-c-tabs__item" role="presentation">
-              <button class="pf-v5-c-tabs__link" type="button" role="tab" data-panel="maintenance-panel">
-                <span class="pf-v5-c-tabs__item-text">Maintenance</span>
-              </button>
-            </li>
-          </ul>
-        </div>
-      </section>
-      <section class="pf-v5-c-page__main-section" id="start-panel" role="tabpanel">
-        <div class="pf-v5-c-card">
-          <div class="pf-v5-c-card__body">
-            <form class="pf-v5-c-form pf-m-limit-width" id="start">
-              <div class="pf-v5-c-form__group">
-                <div class="pf-v5-c-form__group-label">
-                  <label class="pf-v5-c-form__label" for="organisation">
-                    <span class="pf-v5-c-form__label-text">Organisation</span>
-                    <span class="pf-v5-c-form__label-required" aria-hidden="true">*</span>
-                  </label>
+    <main class="hds-app-frame__main" id="hds-main">
+      <div class="console-main">
+        <header class="hds-page-header">
+          <div class="hds-page-header__body">
+            <div class="hds-page-header__main">
+              <div class="hds-page-header__content">
+                <div class="hds-page-header__title-wrapper">
+                  <h1 class="hds-page-header__title hds-typography-display-500 hds-font-weight-bold">5 Minute HashiCorp Healthcheck</h1>
                 </div>
-                <div class="pf-v5-c-form__group-control">
-                  <span class="pf-v5-c-form-control pf-m-required">
-                    <input type="text" id="organisation" required autofocus>
-                  </span>
-                </div>
+                <p class="hds-page-header__description hds-typography-body-300">Start an assessment for a visitor, generate their readout and download the summary to send on.</p>
               </div>
-              <div class="pf-v5-c-form__group">
-                <div class="pf-v5-c-form__group-label">
-                  <label class="pf-v5-c-form__label" for="email">
-                    <span class="pf-v5-c-form__label-text">Contact email</span>
-                    <span class="pf-v5-c-form__label-required" aria-hidden="true">*</span>
-                  </label>
-                </div>
-                <div class="pf-v5-c-form__group-control">
-                  <span class="pf-v5-c-form-control pf-m-required">
-                    <input type="email" id="email" required>
-                  </span>
-                </div>
-              </div>
-              <div class="pf-v5-c-form__group" id="questionnaire-group" hidden>
-                <div class="pf-v5-c-form__group-label">
-                  <label class="pf-v5-c-form__label" for="questionnaire">
-                    <span class="pf-v5-c-form__label-text">Questionnaire</span>
-                  </label>
-                </div>
-                <div class="pf-v5-c-form__group-control">
-                  <span class="pf-v5-c-form-control">
-                    <select id="questionnaire"></select>
-                  </span>
-                </div>
-              </div>
-              <div class="pf-v5-c-alert pf-m-danger pf-m-inline" id="error" hidden>
-                <p class="pf-v5-c-alert__title"></p>
-              </div>
-              <div class="pf-v5-c-form__group pf-m-action">
-                <div class="pf-v5-c-form__actions">
-                  <button class="pf-v5-c-button pf-m-primary" type="submit">Start assessment</button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      </section>
-      <section class="pf-v5-c-page__main-section" id="readout-panel" role="tabpanel" hidden>
-        <div class="pf-v5-c-card">
-          <div class="pf-v5-c-card__body">
-            <form class="pf-v5-c-form pf-m-limit-width" id="readout">
-              <div class="pf-v5-c-form__group">
-                <div class="pf-v5-c-form__group-label">
-                  <label class="pf-v5-c-form__label" for="readout-organisation">
-                    <span class="pf-v5-c-form__label-text">Organisation</span>
-                  </label>
-                </div>
-                <div class="pf-v5-c-form__group-control">
-                  <span class="pf-v5-c-form-control">
-                    <select id="readout-organisation" required></select>
-                  </span>
-                </div>
-              </div>
-              <div class="pf-v5-c-alert pf-m-inline" id="readout-status" hidden>
-                <p class="pf-v5-c-alert__title"></p>
-                <div class="pf-v5-c-alert__description" id="readout-result"></div>
-              </div>
-              <div class="pf-v5-c-form__group pf-m-action">
-                <div class="pf-v5-c-form__actions">
-                  <button class="pf-v5-c-button pf-m-primary" type="submit">Generate readout</button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      </section>
-      <section class="pf-v5-c-page__main-section" id="maintenance-panel" role="tabpanel" hidden>
-        <div class="pf-v5-c-card">
-          <div class="pf-v5-c-card__title">
-            <h2 class="pf-v5-c-card__title-text">Respondents</h2>
-          </div>
-          <div class="pf-v5-c-card__body">
-            <p id="respondent-count"></p>
-          </div>
-          <div class="pf-v5-c-card__body">
-            <button class="pf-v5-c-button pf-m-primary" type="button" id="generate-all">Generate all readouts</button>
-            <a class="pf-v5-c-button pf-m-secondary" href="api/respondents.csv">Download respondents (CSV)</a>
-            <button class="pf-v5-c-button pf-m-secondary" type="button" id="refresh">Refresh</button>
-            <button class="pf-v5-c-button pf-m-danger" type="button" id="delete-all">Delete all respondents</button>
-          </div>
-          <div class="pf-v5-c-card__body">
-            <div class="pf-v5-c-alert pf-m-inline" id="maintenance-status" hidden>
-              <p class="pf-v5-c-alert__title"></p>
             </div>
           </div>
-          <div class="pf-v5-c-card__body">
-            <table class="pf-v5-c-table pf-m-compact pf-m-grid-md" role="grid">
-              <thead class="pf-v5-c-table__thead">
-                <tr class="pf-v5-c-table__tr" role="row">
-                  <th class="pf-v5-c-table__th" scope="col">Organisation</th>
-                  <th class="pf-v5-c-table__th" scope="col">Contact</th>
-                  <th class="pf-v5-c-table__th" scope="col">Assessment</th>
-                  <th class="pf-v5-c-table__th" scope="col">Readout generated</th>
-                  <th class="pf-v5-c-table__th" scope="col">Summary</th>
-                  <td class="pf-v5-c-table__td"></td>
-                </tr>
-              </thead>
-              <tbody class="pf-v5-c-table__tbody" id="respondents"></tbody>
-            </table>
+        </header>
+
+        <div class="hds-tabs hds-tabs--size-medium console-tabs">
+          <div class="hds-tabs__tablist-wrapper">
+            <ul class="hds-tabs__tablist" role="tablist">
+              <li class="hds-tabs__tab hds-tabs__tab--is-selected" role="presentation">
+                <button class="hds-tabs__tab-button" type="button" role="tab" aria-selected="true" data-panel="start-panel">Start an assessment</button>
+              </li>
+              <li class="hds-tabs__tab" role="presentation">
+                <button class="hds-tabs__tab-button" type="button" role="tab" aria-selected="false" data-panel="readout-panel">Generate a readout</button>
+              </li>
+              <li class="hds-tabs__tab" role="presentation">
+                <button class="hds-tabs__tab-button" type="button" role="tab" aria-selected="false" data-panel="maintenance-panel">Maintenance</button>
+              </li>
+              <li class="hds-tabs__tab-indicator" role="presentation"></li>
+            </ul>
+          </div>
+
+          <section class="hds-tabs__panel" id="start-panel" role="tabpanel">
+            <div class="hds-card__container hds-card__container--level-surface-mid hds-card__container--background-neutral-primary console-panel">
+              <form class="console-form" id="start">
+                <div class="hds-form-field--layout-vertical">
+                  <label class="hds-form-field__label hds-form-label" for="organisation">Organisation</label>
+                  <div class="hds-form-field__control">
+                    <input class="hds-form-text-input" type="text" id="organisation" required autofocus>
+                  </div>
+                </div>
+                <div class="hds-form-field--layout-vertical">
+                  <label class="hds-form-field__label hds-form-label" for="email">Contact email</label>
+                  <div class="hds-form-field__control">
+                    <input class="hds-form-text-input" type="email" id="email" required>
+                  </div>
+                  <div class="hds-form-field__helper-text hds-form-helper-text">Where the summary will be sent after the session.</div>
+                </div>
+                <div class="hds-form-field--layout-vertical" id="questionnaire-group" hidden>
+                  <label class="hds-form-field__label hds-form-label" for="questionnaire">Questionnaire</label>
+                  <div class="hds-form-field__control">
+                    <select class="hds-form-select" id="questionnaire"></select>
+                  </div>
+                </div>
+                <div class="hds-alert hds-alert--type-inline hds-alert--color-critical" id="error" role="alert" hidden>
+                  <svg class="hds-alert__icon" aria-hidden="true"><use href="icons.svg#alert-diamond-fill-24"></use></svg>
+                  <div class="hds-alert__content"><div class="hds-alert__text"><div class="hds-alert__title hds-typography-body-200 hds-font-weight-semibold"></div></div></div>
+                </div>
+                <div class="hds-button-set">
+                  <button class="hds-button hds-button--size-medium hds-button--color-primary" type="submit">
+                    <svg class="hds-icon hds-button__icon" aria-hidden="true"><use href="icons.svg#play-16"></use></svg>
+                    <span class="hds-button__text">Start assessment</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </section>
+
+          <section class="hds-tabs__panel" id="readout-panel" role="tabpanel" hidden>
+            <div class="hds-card__container hds-card__container--level-surface-mid hds-card__container--background-neutral-primary console-panel">
+              <form class="console-form" id="readout">
+                <div class="hds-form-field--layout-vertical">
+                  <label class="hds-form-field__label hds-form-label" for="readout-organisation">Organisation</label>
+                  <div class="hds-form-field__control">
+                    <select class="hds-form-select" id="readout-organisation" required></select>
+                  </div>
+                </div>
+                <div class="hds-button-set">
+                  <button class="hds-button hds-button--size-medium hds-button--color-primary" type="submit">
+                    <span class="hds-button__text">Generate readout</span>
+                  </button>
+                </div>
+              </form>
+              <div class="hds-alert hds-alert--type-inline console-alert" id="readout-status" hidden>
+                <svg class="hds-alert__icon" aria-hidden="true"><use href="icons.svg#info-24"></use></svg>
+                <div class="hds-alert__content">
+                  <div class="hds-alert__text">
+                    <div class="hds-alert__title hds-typography-body-200 hds-font-weight-semibold"></div>
+                    <div class="hds-alert__description hds-typography-body-200" id="readout-result"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="hds-tabs__panel" id="maintenance-panel" role="tabpanel" hidden>
+            <div class="hds-card__container hds-card__container--level-surface-mid hds-card__container--background-neutral-primary console-panel">
+              <h2 class="hds-typography-display-300 hds-font-weight-semibold">Respondents</h2>
+              <p class="hds-typography-body-200 console-contact" id="respondent-count"></p>
+              <div class="console-toolbar">
+                <div class="hds-button-set">
+                  <button class="hds-button hds-button--size-medium hds-button--color-primary" type="button" id="generate-all">
+                    <span class="hds-button__text">Generate all readouts</span>
+                  </button>
+                  <a class="hds-button hds-button--size-medium hds-button--color-secondary" href="api/respondents.csv">
+                    <svg class="hds-icon hds-button__icon" aria-hidden="true"><use href="icons.svg#download-16"></use></svg>
+                    <span class="hds-button__text">Download respondents (CSV)</span>
+                  </a>
+                  <button class="hds-button hds-button--size-medium hds-button--color-secondary" type="button" id="refresh">
+                    <svg class="hds-icon hds-button__icon" aria-hidden="true"><use href="icons.svg#reload-16"></use></svg>
+                    <span class="hds-button__text">Refresh</span>
+                  </button>
+                  <button class="hds-button hds-button--size-medium hds-button--color-critical" type="button" id="delete-all">
+                    <svg class="hds-icon hds-button__icon" aria-hidden="true"><use href="icons.svg#trash-16"></use></svg>
+                    <span class="hds-button__text">Delete all respondents</span>
+                  </button>
+                </div>
+              </div>
+              <div class="hds-alert hds-alert--type-inline console-alert" id="maintenance-status" hidden>
+                <svg class="hds-alert__icon" aria-hidden="true"><use href="icons.svg#info-24"></use></svg>
+                <div class="hds-alert__content"><div class="hds-alert__text"><div class="hds-alert__title hds-typography-body-200 hds-font-weight-semibold"></div></div></div>
+              </div>
+              <table class="hds-table hds-table--striped hds-table--density-medium hds-table--valign-middle">
+                <thead class="hds-table__thead">
+                  <tr class="hds-table__tr">
+                    <th class="hds-table__th" scope="col">Organisation</th>
+                    <th class="hds-table__th" scope="col">Contact</th>
+                    <th class="hds-table__th" scope="col">Assessment</th>
+                    <th class="hds-table__th" scope="col">Readout generated</th>
+                    <th class="hds-table__th" scope="col">Summary</th>
+                    <th class="hds-table__th hds-table__th--align-right" scope="col">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="hds-table__tbody" id="respondents"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+    <div class="hds-app-frame__modals">
+      <div class="hds-dialog-primitive__overlay" id="delete-all-overlay" hidden></div>
+      <dialog class="hds-modal hds-modal--size-small hds-modal--color-critical" id="delete-all-modal" aria-labelledby="delete-all-title">
+        <div class="hds-dialog-primitive__wrapper-header">
+          <div class="hds-dialog-primitive__header">
+            <svg class="hds-icon" aria-hidden="true"><use href="icons.svg#alert-diamond-fill-24"></use></svg>
+            <div class="hds-dialog-primitive__title">
+              <h2 class="hds-typography-display-300 hds-font-weight-semibold" id="delete-all-title">Delete all respondents?</h2>
+            </div>
           </div>
         </div>
-      </section>
-    </main>
-  </div>
-  <div class="pf-v5-c-backdrop" id="delete-all-modal" hidden>
-    <div class="pf-v5-l-bullseye">
-      <div class="pf-v5-c-modal-box pf-m-sm" role="dialog" aria-modal="true" aria-labelledby="delete-all-title">
-        <header class="pf-v5-c-modal-box__header">
-          <h1 class="pf-v5-c-modal-box__title" id="delete-all-title">Delete all respondents?</h1>
-        </header>
-        <div class="pf-v5-c-modal-box__body">
-          This deletes every application, stakeholder and readout task in MTA, with their assessments, readouts
-          and summaries. The questionnaire and the tags stay. It cannot be undone.
+        <div class="hds-dialog-primitive__wrapper-body">
+          <div class="hds-dialog-primitive__body hds-typography-body-300">
+            This deletes every application, stakeholder and readout task in the assessment platform, with their assessments, readouts
+            and summaries. The questionnaire and the tags stay. It cannot be undone.
+          </div>
         </div>
-        <footer class="pf-v5-c-modal-box__footer">
-          <button class="pf-v5-c-button pf-m-danger" type="button" id="delete-all-confirm">Delete all</button>
-          <button class="pf-v5-c-button pf-m-link" type="button" id="delete-all-cancel">Cancel</button>
-        </footer>
-      </div>
+        <div class="hds-dialog-primitive__wrapper-footer">
+          <div class="hds-dialog-primitive__footer">
+            <div class="hds-button-set">
+              <button class="hds-button hds-button--size-medium hds-button--color-critical" type="button" id="delete-all-confirm">
+                <span class="hds-button__text">Delete all</span>
+              </button>
+              <button class="hds-button hds-button--size-medium hds-button--color-secondary" type="button" id="delete-all-cancel">
+                <span class="hds-button__text">Cancel</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </dialog>
     </div>
   </div>
   <script>
@@ -189,18 +238,42 @@
     const readoutStatus = document.getElementById("readout-status");
     const readoutResult = document.getElementById("readout-result");
 
-    const tabs = document.querySelectorAll(".pf-v5-c-tabs__link");
+    const ICONS = { success: "check-circle-fill-24", warning: "alert-triangle-fill-24", critical: "alert-diamond-fill-24", neutral: "info-24", highlight: "loading-24" };
+    const PRODUCT_ICONS = { Terraform: "terraform-color-24", Packer: "packer-color-24", Vault: "vault-color-24", Boundary: "boundary-color-24", Consul: "consul-color-24", Nomad: "nomad-color-24" };
+
+    function icon(name, className) {
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("class", className || "hds-icon");
+      svg.setAttribute("aria-hidden", "true");
+      const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+      use.setAttribute("href", `icons.svg#${name}`);
+      svg.append(use);
+      return svg;
+    }
+
+    // Helios tabs: the selected tab sets the indicator's position through two custom properties.
+    const tabs = document.querySelectorAll(".hds-tabs__tab-button");
+    const tablist = document.querySelector(".hds-tabs__tablist");
+    function select(tab) {
+      for (const other of tabs) {
+        const selected = other === tab;
+        other.parentElement.classList.toggle("hds-tabs__tab--is-selected", selected);
+        other.setAttribute("aria-selected", selected);
+        document.getElementById(other.dataset.panel).hidden = !selected;
+      }
+      tablist.style.setProperty("--indicator-left-pos", `${tab.parentElement.offsetLeft}px`);
+      tablist.style.setProperty("--indicator-width", `${tab.parentElement.offsetWidth}px`);
+    }
     for (const tab of tabs) {
       tab.addEventListener("click", () => {
-        for (const other of tabs) {
-          other.parentElement.classList.toggle("pf-m-current", other === tab);
-          document.getElementById(other.dataset.panel).hidden = other !== tab;
-        }
+        select(tab);
         if (tab.dataset.panel === "maintenance-panel") {
           listRespondents();
         }
       });
     }
+    select(tabs[0]);
+    window.addEventListener("resize", () => select(document.querySelector(".hds-tabs__tab--is-selected .hds-tabs__tab-button")));
 
     // Relative, so that requests stay under the path the route serves.
     async function api(path, body, method) {
@@ -216,22 +289,36 @@
       return result;
     }
 
-    function fail(reason) {
-      error.firstElementChild.textContent = reason.message;
-      error.hidden = false;
+    function alert(element, colour, title) {
+      element.className = `hds-alert hds-alert--type-inline hds-alert--color-${colour} console-alert`;
+      element.querySelector(".hds-alert__icon use").setAttribute("href", `icons.svg#${ICONS[colour]}`);
+      element.querySelector(".hds-alert__title").textContent = title;
+      element.hidden = false;
     }
 
-    function add(parent, tag, text) {
+    function fail(reason) {
+      alert(error, "critical", reason.message);
+    }
+
+    function add(parent, tag, text, className) {
       const element = document.createElement(tag);
-      element.textContent = text;
+      if (text !== undefined) {
+        element.textContent = text;
+      }
+      if (className) {
+        element.className = className;
+      }
       parent.append(element);
       return element;
     }
 
     function summaryLink(parent, text, respondent) {
-      const link = add(parent, "a", text);
+      const link = add(parent, "a", undefined, "hds-link-standalone hds-link-standalone--color-primary hds-link-standalone--size-medium hds-link-standalone--icon-position-leading");
+      link.append(icon("download-16", "hds-icon hds-link-standalone__icon"));
+      add(link, "span", text, "hds-link-standalone__text");
       link.href = `api/summaries/${respondent.application}`;
       link.download = `${respondent.organisation} - 5 Minute HashiCorp Healthcheck.pdf`;
+      return link;
     }
 
     async function settled(task) {
@@ -243,28 +330,33 @@
       return result;
     }
 
-    function show(kind, title, result) {
-      readoutStatus.className = `pf-v5-c-alert pf-m-inline pf-m-${kind}`;
-      readoutStatus.firstElementChild.textContent = title;
+    function show(colour, title, result) {
+      alert(readoutStatus, colour, title);
       readoutResult.replaceChildren();
       if (result) {
         add(readoutResult, "p", result.verdict);
-        const areas = add(readoutResult, "ul");
+        const areas = add(readoutResult, "ul", undefined, "console-areas");
         for (const area of result.areas) {
-          add(areas, "li", `${area.product} (${area.capability}): ${area.strength} - ${area.facets.join(", ")}`);
+          const item = add(areas, "li", undefined, "console-area");
+          item.append(icon(PRODUCT_ICONS[area.product]));
+          add(item, "span", `${area.capability}: ${area.strength} (${area.facets.join(", ")})`);
+          add(item, "span", area.product, "hds-badge hds-badge--size-small hds-badge--type-outlined hds-badge--color-neutral");
         }
-        add(readoutResult, "p", `${result.issues} issues written to MTA.`);
+        add(readoutResult, "p", `${result.issues} issues written to the assessment platform.`);
         if (result.patterns.length) {
           add(readoutResult, "p", "Patterns across answers:");
-          const patterns = add(readoutResult, "ul");
+          const patterns = add(readoutResult, "ul", undefined, "console-patterns");
           for (const pattern of result.patterns) {
             add(patterns, "li", `${pattern.name} (${pattern.products.join(", ")}): ${pattern.detail}`);
           }
         }
-        add(readoutResult, "a", "View the issues in MTA").href = result.url;
-        summaryLink(readoutResult, "Download the executive summary (PDF)", result);
+        const links = add(readoutResult, "div", undefined, "console-links");
+        const issues = add(links, "a", undefined, "hds-link-standalone hds-link-standalone--color-primary hds-link-standalone--size-medium hds-link-standalone--icon-position-trailing");
+        add(issues, "span", "View the issues", "hds-link-standalone__text");
+        issues.append(icon("external-link-16", "hds-icon hds-link-standalone__icon"));
+        issues.href = result.url;
+        summaryLink(links, "Download the executive summary (PDF)", result);
       }
-      readoutStatus.hidden = false;
     }
 
     api("questionnaires").then((names) => {
@@ -277,7 +369,7 @@
     function listOrganisations() {
       api("organisations").then((names) => {
         readoutOrganisation.replaceChildren(...names.map((name) => new Option(name)));
-      }).catch((reason) => show("danger", reason.message));
+      }).catch((reason) => show("critical", reason.message));
     }
     listOrganisations();
 
@@ -303,15 +395,15 @@
       button.disabled = true;
       try {
         const { task } = await api("readouts", { organisation });
-        show("info", `Readout task ${task} is running`);
+        show("highlight", `Readout task ${task} is running`);
         const result = await settled(task);
         if (result.state === "Succeeded") {
           show("success", `Readout for ${organisation}, generated ${result.generated}`, { ...result, organisation });
         } else {
-          show("danger", `Readout task ${task} ${result.state.toLowerCase()}: ${result.errors.join("; ")}`);
+          show("critical", `Readout task ${task} ${result.state.toLowerCase()}: ${result.errors.join("; ")}`);
         }
       } catch (reason) {
-        show("danger", reason.message);
+        show("critical", reason.message);
       } finally {
         button.disabled = false;
       }
@@ -321,17 +413,14 @@
     const maintenanceStatus = document.getElementById("maintenance-status");
     const generateAll = document.getElementById("generate-all");
     const deleteAllModal = document.getElementById("delete-all-modal");
+    const deleteAllOverlay = document.getElementById("delete-all-overlay");
 
-    function report(kind, title) {
-      maintenanceStatus.className = `pf-v5-c-alert pf-m-inline pf-m-${kind}`;
-      maintenanceStatus.firstElementChild.textContent = title;
-      maintenanceStatus.hidden = false;
+    function report(colour, title) {
+      alert(maintenanceStatus, colour, title);
     }
 
-    function cell(row, text) {
-      const element = add(row, "td", text);
-      element.className = "pf-v5-c-table__td";
-      return element;
+    function cell(row, text, className) {
+      return add(row, "td", text, `hds-table__td ${className || ""}`);
     }
 
     async function listRespondents() {
@@ -343,37 +432,40 @@
           `${respondents.length} respondents, ${completed} with a completed assessment, ${generated} with a readout.`;
         respondentRows.replaceChildren();
         for (const respondent of respondents) {
-          const row = add(respondentRows, "tr");
-          row.className = "pf-v5-c-table__tr";
-          cell(row, respondent.organisation);
+          const row = add(respondentRows, "tr", undefined, "hds-table__tr");
+          cell(row, respondent.organisation, "hds-font-weight-medium");
           cell(row, respondent.contact);
-          cell(row, respondent.completed ? "Completed" : "Not completed");
+          const status = cell(row);
+          add(status, "span", respondent.completed ? "Completed" : "Not completed",
+            `hds-badge hds-badge--size-small hds-badge--type-filled hds-badge--color-${respondent.completed ? "success" : "neutral"}`);
           cell(row, respondent.generated ? new Date(respondent.generated).toLocaleString() : "");
           const summary = cell(row);
           if (respondent.generated) {
             summaryLink(summary, "PDF", respondent);
           }
-          const remove = add(cell(row), "button", "Delete");
-          remove.className = "pf-v5-c-button pf-m-link pf-m-danger";
+          const actions = cell(row, undefined, "hds-table__td--align-right");
+          const remove = add(actions, "button", undefined, "hds-button hds-button--size-small hds-button--color-critical");
+          remove.append(icon("trash-16", "hds-icon hds-button__icon"));
+          const label = add(remove, "span", "Delete", "hds-button__text");
           remove.type = "button";
           remove.addEventListener("click", async () => {
             // The first click arms the button and the second deletes.
-            if (remove.textContent === "Delete") {
-              remove.textContent = "Confirm delete";
+            if (label.textContent === "Delete") {
+              label.textContent = "Confirm delete";
               return;
             }
             try {
               await api(`respondents/${respondent.application}`, null, "DELETE");
               report("success", `Deleted ${respondent.organisation}`);
             } catch (reason) {
-              report("danger", reason.message);
+              report("critical", reason.message);
             }
             listRespondents();
             listOrganisations();
           });
         }
       } catch (reason) {
-        report("danger", reason.message);
+        report("critical", reason.message);
       }
     }
 
@@ -386,7 +478,7 @@
         const total = waiting.length;
         let succeeded = 0;
         let failed = 0;
-        report("info", `Generating ${total} readouts`);
+        report("highlight", `Generating ${total} readouts`);
         // A node limits how fast it pulls images, and each readout is a pod, so only a few run at once.
         await Promise.all(Array.from({ length: 4 }, async () => {
           while (waiting.length) {
@@ -397,33 +489,37 @@
             } catch {
               failed++;
             }
-            report("info", `Generating ${total} readouts: ${succeeded} succeeded, ${failed} failed`);
+            report("highlight", `Generating ${total} readouts: ${succeeded} succeeded, ${failed} failed`);
           }
         }));
-        report(failed ? "danger" : "success", `Generated ${succeeded} of ${total} readouts, ${failed} failed`);
+        report(failed ? "critical" : "success", `Generated ${succeeded} of ${total} readouts, ${failed} failed`);
       } catch (reason) {
-        report("danger", reason.message);
+        report("critical", reason.message);
       } finally {
         generateAll.disabled = false;
         listRespondents();
       }
     });
 
-    document.getElementById("delete-all").addEventListener("click", () => {
-      deleteAllModal.hidden = false;
-    });
+    function closeModal() {
+      deleteAllModal.close();
+      deleteAllOverlay.hidden = true;
+    }
 
-    document.getElementById("delete-all-cancel").addEventListener("click", () => {
-      deleteAllModal.hidden = true;
+    document.getElementById("delete-all").addEventListener("click", () => {
+      deleteAllOverlay.hidden = false;
+      deleteAllModal.showModal();
     });
+    document.getElementById("delete-all-cancel").addEventListener("click", closeModal);
+    deleteAllModal.addEventListener("cancel", closeModal);
 
     document.getElementById("delete-all-confirm").addEventListener("click", async () => {
-      deleteAllModal.hidden = true;
+      closeModal();
       try {
         const { removed } = await api("respondents", { confirm: "delete all respondents" }, "DELETE");
         report("success", `Deleted ${removed} respondents`);
       } catch (reason) {
-        report("danger", reason.message);
+        report("critical", reason.message);
       }
       listRespondents();
       listOrganisations();

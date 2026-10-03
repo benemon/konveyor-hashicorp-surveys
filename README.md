@@ -13,7 +13,7 @@ Validated against Migration Toolkit for Applications (MTA) 8.3.0. The design is 
 ## Components
 
 - `hashicorp-healthcheck/`: the questionnaire, its tests and its design.
-- `healthcheck-console/`: a small Python service served on MTA's own host at `/console/`. Its page starts an assessment from an organisation and a contact email, generates readouts, serves each respondent's executive summary and has a maintenance tab. Sharing MTA's host keeps a logged-in browser tab logged in when the page sends it on to the questionnaire.
+- `healthcheck-console/`: a small Python service served on MTA's own host at `/console/`. Its page starts an assessment from an organisation and a contact email, generates readouts, serves each respondent's executive summary and has a maintenance tab. It is styled with Helios, the HashiCorp design system, whose stylesheet and icons the image build fetches. Sharing MTA's host keeps a logged-in browser tab logged in when the page sends it on to the questionnaire.
 - `healthcheck-readout/`: an MTA addon. It derives the readout from a completed assessment and writes it to the application as Issues, Insights, facts, product tags and an executive summary in PDF. Running it again replaces its previous output.
 
 ## Install on OpenShift

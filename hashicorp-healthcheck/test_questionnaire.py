@@ -355,7 +355,7 @@ class Personas(unittest.TestCase):
                     self.assertEqual(f"**{area['capability']}.** A follow-up session" in text, shown)
                     for e in area["evidence"]:
                         self.assertEqual(f"| {e['answer']} |" in text, shown)
-                self.assertEqual("Three areas are shown here" in text, len(result["areas"]) > 3)
+                self.assertEqual("areas highlighted are covered in detail" in text, len(result["areas"]) > 3)
 
     def test_presentation_cap(self):
         persona = next(p for p in PERSONAS if p["name"].startswith("A"))

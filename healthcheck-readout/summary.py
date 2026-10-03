@@ -31,9 +31,13 @@ SAMPLE = {
 # Name of the summary in the application's bucket in MTA.
 FILE = "healthcheck-summary.pdf"
 TEMPLATE = "/opt/eisvogel.latex"
+# Product marks as PDF, made by the image build. The summary shows a product's mark beside its next step.
+LOGOS = Path("/opt/logos")
+FOLLOW_UP_PRODUCTS = sorted({f["product"] for f in FOLLOW_UP.values()})
 
 # Pandoc sizes the columns of a pipe table from the dashes when a row is wider than the page.
 AREA_COLUMNS = "|------|------------|------------------|"
+WORDS = {4: "four", 5: "five", 6: "six"}
 # Characters per line in the two wider columns of an area's table, to estimate its height.
 ANSWER_WIDTH, DIRECTION_WIDTH = 27, 42
 
@@ -56,6 +60,11 @@ def summary_table(rows):
     return lines
 
 
+def mark(product):
+    logo = LOGOS / f"{product}.pdf"
+    return f"![]({logo}){{height=1.1em}} " if logo.exists() else ""
+
+
 def needspace(count):
     return ["", f"\\needspace{{{count}\\baselineskip}}", ""]
 
@@ -76,7 +85,8 @@ def markdown(organisation, readout):
     presented = [a for a in areas if a["capability"] in readout["presented"]]
     lines = [
         "---",
-        f"title: {json.dumps(organisation + ': 5 Minute HashiCorp Healthcheck')}",
+        f"title: {json.dumps(organisation)}",
+        'subtitle: "5 Minute HashiCorp Healthcheck"',
         f"date: {json.dumps(day)}",
         f"subject: {json.dumps(f'questionnaire {readout["questionnaire_version"]}, readout {readout["readout_version"]}')}",
         "lang: en-GB",
@@ -94,6 +104,10 @@ def markdown(organisation, readout):
     lines += [
         "header-includes:",
         "  - \\usepackage{needspace}",
+        # Bullets in the summary table line up with the plain text in the rows above them.
+        "  - \\usepackage{enumitem}",
+        "  - \\usepackage{etoolbox}",
+        "  - \\AtBeginEnvironment{longtable}{\\setlist[itemize]{leftmargin=1.1em}}",
         "---",
         "",
         "# Introduction",
@@ -112,24 +126,26 @@ def markdown(organisation, readout):
             f"{escaped(organisation)}.",
             "",
         ]
-        if len(presented) < len(areas):
-            lines += ["Three areas are shown here, prioritised from the signals in the healthcheck.", ""]
     else:
         lines += ["These results come from a short questionnaire. No areas were highlighted.", ""]
     lines += summary_table([
         ("Environment", readout["environment"]),
         ("Areas highlighted", [f"- {a['capability']} ({a['strength']})" for a in areas] or "None"),
-        ("No signal in", [f"- {c}" for c in readout["in_good_shape"]] or "None"),
+        ("Not highlighted", [f"- {c}" for c in readout["in_good_shape"]] or "None"),
     ])
     for number, area in enumerate(presented):
         # Keeps an area's heading and table on one page.
         lines += needspace(lines_needed(area["evidence"]) + (0 if number else 4))
         if number == 0:
             lines += ["# What was highlighted", ""]
+            if len(presented) < len(areas):
+                lines += [
+                    f"Three of the {WORDS[len(areas)]} areas highlighted are covered in detail below, in order of "
+                    "strength.",
+                    "",
+                ]
         lines += [
             f"## {area['capability']}",
-            "",
-            f"Signal: {area['strength']}.",
             "",
             "| **Aspect** | **Response** | **Why it matters, and a direction** |",
             AREA_COLUMNS,
@@ -151,8 +167,8 @@ def markdown(organisation, readout):
         follow_up = FOLLOW_UP[area["capability"]]
         topics = follow_up["topics"][0].lower() + follow_up["topics"][1:]
         lines += [
-            f"{number}. **{area['capability']}.** A follow-up session on {follow_up['product']}, covering "
-            f"{topics}. Worth involving:",
+            f"{number}. {mark(follow_up['product'])}**{area['capability']}.** A follow-up session on "
+            f"{follow_up['product']}, covering {topics}. Worth involving:",
             "",
         ]
         lines += [f"    - {role}" for role in follow_up["roles"]]
@@ -160,8 +176,8 @@ def markdown(organisation, readout):
     if readout["implementation"]:
         product = FOLLOW_UP[readout["implementation"]["capability"]]["product"]
         lines += [
-            f"Changes in the areas above are usually delivered as code, which makes {product} relevant "
-            "to those sessions.",
+            f"{mark(product)}Changes in the areas above are usually delivered as code, which makes {product} "
+            "relevant to those sessions.",
         ]
     return "\n".join(lines) + "\n"
 
