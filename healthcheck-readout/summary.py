@@ -36,10 +36,10 @@ LOGOS = Path("/opt/logos")
 FOLLOW_UP_PRODUCTS = sorted({f["product"] for f in FOLLOW_UP.values()})
 
 # Pandoc sizes the columns of a pipe table from the dashes when a row is wider than the page.
-AREA_COLUMNS = "|------|------------|------------------|"
+AREA_COLUMNS = "|--------|----------|--------------|--------------|"
 WORDS = {4: "four", 5: "five", 6: "six"}
-# Characters per line in the two wider columns of an area's table, to estimate its height.
-ANSWER_WIDTH, DIRECTION_WIDTH = 27, 42
+# Characters per line in the wider columns of an area's table, to estimate its height.
+ANSWER_WIDTH, TEXT_WIDTH = 22, 30
 
 
 def escaped(text):
@@ -71,7 +71,7 @@ def needspace(count):
 
 def lines_needed(evidence):
     rows = sum(
-        max(len(e["answer"]) // ANSWER_WIDTH, len(e["rationale"] + e["mitigation"]) // DIRECTION_WIDTH) + 2
+        max(len(e["answer"]) // ANSWER_WIDTH, len(e["rationale"]) // TEXT_WIDTH, len(e["mitigation"]) // TEXT_WIDTH) + 2
         for e in evidence
     )
     return rows + 7
@@ -119,11 +119,11 @@ def markdown(organisation, readout):
     ]
     if areas:
         lines += [
-            "Each response that highlighted an opportunity for improvement appears below under the area it "
-            "belongs to, with the reason it matters and a direction for improvement.",
-            "",
             "These results come from a short questionnaire. They show where further discussion would benefit "
             f"{escaped(organisation)}.",
+            "",
+            "Each response that highlighted an opportunity for improvement appears below under the area it "
+            "belongs to, with what it means and a suggested change.",
             "",
         ]
     else:
@@ -147,11 +147,11 @@ def markdown(organisation, readout):
         lines += [
             f"## {area['capability']}",
             "",
-            "| **Aspect** | **Response** | **Why it matters, and a direction** |",
+            "| **Aspect** | **Response** | **What this means** | **Suggested change** |",
             AREA_COLUMNS,
         ]
         lines += [
-            f"| {e['facet'].capitalize()} | {e['answer']} | {e['rationale']} {e['mitigation']} |"
+            f"| {e['facet'].capitalize()} | {e['answer']} | {e['rationale']} | {e['mitigation']} |"
             for e in area["evidence"]
         ]
     if readout["patterns"]:
