@@ -17,12 +17,15 @@ The design of the HashiCorp Healthcheck questionnaire and of the readout derived
 | Abbreviation | Capability | Associated product |
 |---|---|---|
 | IL | Infrastructure Lifecycle | Terraform |
+| IM | Image Lifecycle | Packer |
 | MIS | Machine Identity and Secrets | Vault |
 | HA | Human Access | Boundary |
 | SN | Service Networking | Consul |
 | WL | Workload Lifecycle | Nomad |
 
 The association is where a follow-up conversation starts.
+
+Infrastructure Lifecycle and Image Lifecycle are assessed separately. Provisioning as code and image management are distinct operating concerns, and an organisation that does not maintain machine images answers so and has no Image Lifecycle gap.
 
 ## 3. MTA behaviour the design depends on
 
@@ -90,9 +93,8 @@ The cross-tag table is exhaustive.
 | Source answer | Adjacent | Justification |
 |---|---|---|
 | `access credentials: shared` | MIS | Shared credentials need issuing and rotating |
-| `service-to-service security: network-location` and `service-to-service security: manual-rules` | MIS | Identity-based service access requires a managed machine identity lifecycle rather than relying only on network position or addresses |
 
-Several deployment toolchains establish fragmented delivery, not a need for shared discovery or connectivity, so `deployment: per-platform` carries no adjacent tag. Q11 and Q12 supply that evidence directly, and the distributed-estate pattern combines them.
+Product integration is not evidence. The service-to-service security answers establish a Service Networking concern; that service identity can be issued from a certificate authority is an implementation relationship, so they carry no Machine Identity and Secrets tag. A certificate lifecycle concern comes only from the certificates question, and the patterns combine the two where both are present. Several deployment toolchains establish fragmented delivery, not a need for shared discovery or connectivity, so `deployment: per-platform` carries no adjacent tag either.
 
 ### 4.5 Solution adjacency
 
@@ -101,6 +103,8 @@ Infrastructure Lifecycle is how the remedy for a gap in any other capability is 
 - When another capability has a direct signal and IL has none, the readout notes IL as related to implementation, with its sources.
 - It is not a signal. It does not count towards the areas presented.
 - When no capability has a direct signal, it does not appear.
+
+Image Lifecycle has the same relationship with Infrastructure Lifecycle: provisioning consumes the images that image management produces. That integration creates no adjacent signal in either direction. Where answers to both establish something together, a pattern says so.
 
 ### 4.6 Overall result
 
@@ -127,7 +131,7 @@ The overall result is a triage status in MTA. One yellow answer leaves it green 
 ### 4.7 Presentation
 
 1. Strong signals, then moderate.
-2. Within a tier, the capability with more red answers first, then more yellow answers, then the order IL, MIS, HA, SN, WL.
+2. Within a tier, the capability with more red answers first, then more yellow answers, then the order IL, IM, MIS, HA, SN, WL.
 3. At most three direct areas.
 4. Adjacent areas, only for capabilities with no direct signal, in the order above. They are facilitator guidance and are not presented to the respondent.
 5. The solution adjacency note, if it applies, after the areas.
@@ -148,6 +152,9 @@ A pattern is a combination of answers that says something neither answer says al
 | Distributed estate, fragmented control planes | `environment` is `hybrid` or `several-clouds`, and at least two of: `discovery` is `per-environment`; `service-to-service security` is `per-environment`; `deployment` is `per-platform` | Workloads span several environments, and discovery, traffic policy or deployment is done differently in each. | SN, WL |
 | Deployment is standardised, networking is not | `deployment` is `one-workflow`, and one of: `discovery` is `per-environment`; `service-to-service security` is `per-environment` | Workloads are deployed through one consistent workflow across platforms, but discovery or traffic policy still differs by environment. | SN |
 | Non-standard workloads sit outside the main platform | `deployment` is `one-platform`, and `non-standard workloads` is `individual-servers` or `separate-platforms` | The main platform meets most needs, but batch, legacy or non-containerised workloads are run by hand or on separate tooling. | WL |
+| Automated infrastructure, unmanaged image lifecycle | `provisioning` is `fragmented-code` or `shared-code`, and `image lifecycle` is `manual-governance` or `unmanaged-versions` | Infrastructure delivery is codified, but the machine images consumed by that workflow are not governed to the same standard. | IL, IM |
+| Golden-image pipeline disconnected from provisioning | `provisioning` is `fragmented-code` or `shared-code`, and `image lifecycle` is `central-no-validation` | Approved image metadata exists, but downstream infrastructure workflows do not consistently validate what they consume. | IL, IM |
+| Manual image maintenance outside automated delivery | `provisioning` is `fragmented-code` or `shared-code`, and `image build` is `manual` | Provisioning automation does not extend to the machine-image build process, leaving a manual dependency in the delivery chain. | IL, IM |
 | Network-centric controls without internal certificates | `service-to-service security` is `manual-rules` or `network-location`, and `certificates` is `not-used` | Traffic between services is controlled by network location or hand-maintained rules, and internal services do not commonly use certificates. | MIS, SN |
 | Network rules with a manual certificate lifecycle | `service-to-service security` is `manual-rules` or `network-location`, and `certificates` is `by-hand` or `partly-automated` | Traffic between services is controlled by network location or hand-maintained rules, and the certificates that could identify services are issued by hand or unevenly. | MIS, SN |
 
@@ -199,7 +206,7 @@ The title page uses `healthcheck-readout/cover.pdf` as its background when the f
 
 Every question is single choice and has an explanation shown to the respondent. There is no branching: `includeFor`, `excludeFor` and `autoAnswerFor` are not used. "Direct" and "Adjacent" list the capability tags an answer applies.
 
-Sixteen questions is the limit: at about 20 seconds each, fourteen already fill five minutes.
+Sixteen questions is the limit, and the questionnaire is at it: at about 20 seconds each, sixteen take just over five minutes. A further question must replace one.
 
 ### Section 1: Environment
 
@@ -226,7 +233,31 @@ Q1 is context. It opens the conversation and helps the facilitator read the late
 | 4 | With infrastructure as code built from shared, reusable patterns | `shared-code` | green |  |  |
 | 5 | I don't know | `unknown` | unknown |  |  |
 
-**Q3 (guardrails). How are your organisation's standards and policies applied to new infrastructure?**
+**Q3 (image build). How are machine images used for servers or compute instances created and maintained?**
+
+| # | Answer | Key | Risk | Direct | Adjacent |
+|---|---|---|---|---|---|
+| 1 | Built or updated by hand, with steps documented in tickets, runbooks or checklists | `manual` | red | IM |  |
+| 2 | Automated, but each platform or team maintains a different build process | `fragmented-automation` | yellow | IM |  |
+| 3 | Built automatically from version-controlled definitions, but teams maintain their own patterns | `team-patterns` | yellow | IM |  |
+| 4 | Built automatically from version-controlled, reusable image definitions | `codified` | green |  |  |
+| 5 | We do not maintain machine images as part of our delivery model | `not-applicable` | green |  |  |
+| 6 | I don't know | `unknown` | unknown |  |  |
+
+Both image questions have a not-applicable answer for organisations that do not maintain machine images. It is green and carries no signal.
+
+**Q4 (image lifecycle). Once machine images are published, how do teams know which versions are approved and what happens when an image becomes outdated or vulnerable?**
+
+| # | Answer | Key | Risk | Direct | Adjacent |
+|---|---|---|---|---|---|
+| 1 | Teams choose image IDs or versions themselves; there is no central record of approved versions | `unmanaged-versions` | red | IM |  |
+| 2 | Approved images are documented centrally, but updates and retirement are communicated and enforced manually | `manual-governance` | yellow | IM |  |
+| 3 | Approved versions are published centrally, but downstream consumers are not automatically checked against them | `central-no-validation` | yellow | IM |  |
+| 4 | Approved versions are published centrally and downstream workflows validate them; outdated or vulnerable images can be revoked | `governed` | green |  |  |
+| 5 | We do not maintain machine images as part of our delivery model | `not-applicable` | green |  |  |
+| 6 | I don't know | `unknown` | unknown |  |  |
+
+**Q5 (guardrails). How are your organisation's standards and policies applied to new infrastructure?**
 
 | # | Answer | Key | Risk | Direct | Adjacent |
 |---|---|---|---|---|---|
@@ -236,19 +267,19 @@ Q1 is context. It opens the conversation and helps the facilitator read the late
 | 4 | Automated checks run on every change, and teams self-serve within them | `automated` | green |  |  |
 | 5 | I don't know | `unknown` | unknown |  |  |
 
-**Q4 (change and drift). Once infrastructure is built, how are changes made to it?**
+**Q6 (change and drift). Once infrastructure is built, how are changes made to it?**
 
 | # | Answer | Key | Risk | Direct | Adjacent |
 |---|---|---|---|---|---|
 | 1 | Mostly by hand; records often don't match what is running | `by-hand` | red | IL |  |
 | 2 | A mix of automation and manual changes; differences surface when something breaks | `mixed` | yellow | IL |  |
 | 3 | Through automation, but differences are found and fixed by hand | `fixed-by-hand` | yellow | IL |  |
-| 4 | Through the same automated workflow that built it; differences are detected and corrected | `reconciled` | green |  |  |
+| 4 | Through the same controlled workflow that built it; differences are detected and corrective changes are made through that workflow | `reconciled` | green |  |  |
 | 5 | I don't know | `unknown` | unknown |  |  |
 
 ### Section 3: Security and Access
 
-**Q5 (secret storage). How do applications typically obtain credentials such as database passwords or API keys?**
+**Q7 (secret storage). How do applications typically obtain credentials such as database passwords or API keys?**
 
 | # | Answer | Key | Risk | Direct | Adjacent |
 |---|---|---|---|---|---|
@@ -258,7 +289,7 @@ Q1 is context. It opens the conversation and helps the facilitator read the late
 | 4 | They are issued automatically, based on the application's own identity | `identity-issued` | green |  |  |
 | 5 | I don't know | `unknown` | unknown |  |  |
 
-**Q6 (rotation). How long do application credentials usually stay valid?**
+**Q8 (rotation). How long do application credentials usually stay valid?**
 
 | # | Answer | Key | Risk | Direct | Adjacent |
 |---|---|---|---|---|---|
@@ -268,7 +299,7 @@ Q1 is context. It opens the conversation and helps the facilitator read the late
 | 4 | They are short-lived and issued on demand | `short-lived` | green |  |  |
 | 5 | I don't know | `unknown` | unknown |  |  |
 
-**Q7 (certificates). How are certificates for internal services issued and renewed?**
+**Q9 (certificates). How are certificates for internal services issued and renewed?**
 
 | # | Answer | Key | Risk | Direct | Adjacent |
 |---|---|---|---|---|---|
@@ -278,9 +309,9 @@ Q1 is context. It opens the conversation and helps the facilitator read the late
 | 4 | Certificates are not commonly used for internal services | `not-used` | green |  |  |
 | 5 | I don't know | `unknown` | unknown |  |  |
 
-This question covers certificate lifecycle where certificates exist. Whether their absence is a gap is left to the service-to-service security question and to the pattern "Network rules without service identity".
+This question covers certificate lifecycle where certificates exist. Whether their absence is a gap is left to the service-to-service security question and to the pattern "Network-centric controls without internal certificates".
 
-**Q8 (access path). How do engineers connect to servers, databases and clusters to administer them?**
+**Q10 (access path). How do engineers connect to servers, databases and clusters to administer them?**
 
 | # | Answer | Key | Risk | Direct | Adjacent |
 |---|---|---|---|---|---|
@@ -290,7 +321,7 @@ This question covers certificate lifecycle where certificates exist. Whether the
 | 4 | Through an access service that connects them only to the systems they are approved for | `brokered` | green |  |  |
 | 5 | I don't know | `unknown` | unknown |  |  |
 
-**Q9 (access credentials). What credentials are used to get into the systems engineers administer?**
+**Q11 (access credentials). What credentials are used to get into the systems engineers administer?**
 
 | # | Answer | Key | Risk | Direct | Adjacent |
 |---|---|---|---|---|---|
@@ -300,7 +331,7 @@ This question covers certificate lifecycle where certificates exist. Whether the
 | 4 | Credentials issued or injected for the session that expire automatically; engineers may never see them | `per-session` | green |  |  |
 | 5 | I don't know | `unknown` | unknown |  |  |
 
-**Q10 (visibility). Could you show who accessed a given production system last week, and what they did?**
+**Q12 (visibility). Could you show who accessed a given production system last week, and what they did?**
 
 | # | Answer | Key | Risk | Direct | Adjacent |
 |---|---|---|---|---|---|
@@ -311,7 +342,7 @@ This question covers certificate lifecycle where certificates exist. Whether the
 
 ### Section 4: Runtime and Connectivity
 
-**Q11 (discovery). How do applications find each other across your environments?**
+**Q13 (discovery). How do applications find each other across your environments?**
 
 | # | Answer | Key | Risk | Direct | Adjacent |
 |---|---|---|---|---|---|
@@ -321,18 +352,18 @@ This question covers certificate lifecycle where certificates exist. Whether the
 | 4 | One discovery layer spans all environments | `spanning-layer` | green |  |  |
 | 5 | I don't know | `unknown` | unknown |  |  |
 
-**Q12 (service-to-service security). How is traffic between applications controlled?**
+**Q14 (service-to-service security). How is traffic between applications controlled?**
 
 | # | Answer | Key | Risk | Direct | Adjacent |
 |---|---|---|---|---|---|
-| 1 | Mostly by network location; once inside, services can reach each other freely | `network-location` | red | SN | MIS |
-| 2 | Firewall rules or address lists updated by ticket or by hand | `manual-rules` | yellow | SN | MIS |
+| 1 | Mostly by network location; once inside, services can reach each other freely | `network-location` | red | SN |  |
+| 2 | Firewall rules or address lists updated by ticket or by hand | `manual-rules` | yellow | SN |  |
 | 3 | Each environment has its own policy mechanism, managed separately | `per-environment` | yellow | SN |  |
 | 4 | Everything runs on one platform and its built-in policies are enough | `one-platform` | green |  |  |
 | 5 | Services authenticate each other and traffic is encrypted, with one set of rules per service | `service-identity` | green |  |  |
 | 6 | I don't know | `unknown` | unknown |  |  |
 
-**Q13 (deployment). How are application workloads deployed and run?**
+**Q15 (deployment). How are application workloads deployed and run?**
 
 | # | Answer | Key | Risk | Direct | Adjacent |
 |---|---|---|---|---|---|
@@ -342,7 +373,7 @@ This question covers certificate lifecycle where certificates exist. Whether the
 | 4 | On several platforms, through one consistent deployment workflow | `one-workflow` | green |  |  |
 | 5 | I don't know | `unknown` | unknown |  |  |
 
-**Q14 (non-standard workloads). How do you run workloads that don't fit your main platform, such as batch jobs, legacy applications or software that isn't containerised?**
+**Q16 (non-standard workloads). How do you run workloads that don't fit your main platform, such as batch jobs, legacy applications or software that isn't containerised?**
 
 | # | Answer | Key | Risk | Direct | Adjacent |
 |---|---|---|---|---|---|
@@ -385,6 +416,10 @@ Personas, in `personas.yaml`: ten reference respondents, each with its answers a
 - For every persona, the executive summary has a section for each area with a signal and a row for each of its answers.
 - For every persona, no area with a direct or adjacent signal is reported as having no signal.
 - For every persona, the summary says further discussion would benefit the organisation, and lists next steps, only when an area is highlighted.
+- The two image questions signal Image Lifecycle on red and yellow answers only, each has a not-applicable answer, and choosing not-applicable for both creates no signal, pattern or product.
+- No service-to-service security answer carries an adjacent tag, and the certificate pattern still holds when a certificates answer supplies the evidence.
+- The drift answer "found and fixed by hand" is yellow, Infrastructure Lifecycle, and its mitigation claims no automatic reconciliation.
+- Patterns do not change direct signals or evidence.
 - The summary does not contain the overall result's message.
 - The summary shows exactly the presented areas: persona A has five areas with a signal and three sections and next steps.
 - The summary's metadata carries the versions in the readout it renders, not the running code's.
@@ -393,14 +428,14 @@ Personas, in `personas.yaml`: ten reference respondents, each with its answers a
 
 | Persona | Shows |
 |---|---|
-| A: highly manual enterprise | Signals in all five capabilities; three presented |
-| B: mature OpenShift platform, static secrets | One strong signal; IL as a solution adjacency note only |
-| C: fragmented infrastructure as code | A moderate signal and an overall result of yellow |
+| A: highly manual enterprise | Signals in all six capabilities; three presented |
+| B: mature OpenShift platform, static secrets | One strong signal; IL as a solution adjacency note only; no machine images maintained |
+| C: fragmented infrastructure as code | Moderate signals and an overall result of yellow; a published image record that provisioning does not validate |
 | D: mature platform organisation | No signal in any capability; overall green |
-| E: respondent lacks visibility | Four unknown answers; overall unknown |
+| E: respondent lacks visibility | Six unknown answers; overall unknown |
 | F: mature platform, shared admin accounts | An adjacent signal that is not absorbed |
-| G: capable platform with contradictions | Four patterns; ordering within the strong tier |
-| H: hybrid estate, partly standardised | Three moderate signals and three patterns |
+| G: capable platform with contradictions | Six patterns; ordering within the strong tier; images built by hand and unmanaged beside codified provisioning |
+| H: hybrid estate, partly standardised | Four moderate signals and four patterns; fragmented image automation |
 | I: consistent deployment, uneven networking | One yellow answer: a moderate signal with an overall result of green |
 | J: segmented network, no internal certificates | A pattern that rests on a green answer; an adjacent signal from Service Networking |
 

@@ -24,6 +24,7 @@ SUMMARY = "healthcheck-summary.pdf"
 CONFIRMATION = "delete all respondents"
 CAPABILITIES = (
     "Infrastructure Lifecycle",
+    "Image Lifecycle",
     "Machine Identity and Secrets",
     "Human Access",
     "Service Networking",
