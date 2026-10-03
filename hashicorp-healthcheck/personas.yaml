@@ -1,14 +1,14 @@
 - name: "A: highly manual enterprise"
-  answers: [4, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 2, 2, 2]
+  answers: [4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 2, 2, 2]
   direct: {Infrastructure Lifecycle: strong, Image Lifecycle: strong, Machine Identity and Secrets: strong, Human Access: moderate, Service Networking: strong, Workload Lifecycle: moderate}
-  presented: [Infrastructure Lifecycle, Machine Identity and Secrets, Image Lifecycle]
+  presented: [Machine Identity and Secrets, Infrastructure Lifecycle, Image Lifecycle]
   adjacent: {}
   solution_adjacency: []
   patterns: [Network rules with a manual certificate lifecycle]
   overall: red
 
 - name: "B: mature OpenShift platform, static secrets"
-  answers: [3, 4, 5, 5, 4, 4, 1, 1, 2, 4, 3, 3, 3, 4, 3, 3]
+  answers: [3, 4, 5, 5, 4, 4, 4, 1, 2, 1, 2, 4, 3, 3, 3, 4, 3, 3]
   direct: {Machine Identity and Secrets: strong}
   presented: [Machine Identity and Secrets]
   adjacent: {}
@@ -17,7 +17,7 @@
   overall: red
 
 - name: "C: fragmented infrastructure as code"
-  answers: [1, 3, 2, 3, 2, 3, 3, 3, 3, 4, 3, 3, 3, 4, 3, 3]
+  answers: [1, 3, 2, 3, 2, 2, 3, 3, 4, 3, 3, 4, 3, 3, 3, 4, 3, 3]
   direct: {Infrastructure Lifecycle: moderate, Image Lifecycle: moderate}
   presented: [Infrastructure Lifecycle, Image Lifecycle]
   adjacent: {}
@@ -26,7 +26,7 @@
   overall: yellow
 
 - name: "D: mature platform organisation"
-  answers: [4, 4, 4, 4, 4, 4, 4, 4, 3, 4, 4, 3, 4, 5, 4, 4]
+  answers: [4, 4, 4, 4, 3, 4, 4, 4, 4, 4, 3, 4, 4, 3, 4, 5, 4, 4]
   direct: {}
   presented: []
   adjacent: {}
@@ -35,7 +35,7 @@
   overall: green
 
 - name: "E: respondent lacks visibility"
-  answers: [1, 5, 6, 6, 4, 4, 5, 3, 5, 4, 3, 3, 5, 4, 3, 3]
+  answers: [1, 5, 6, 6, 5, 4, 4, 5, 5, 3, 5, 4, 3, 3, 5, 4, 3, 3]
   direct: {}
   presented: []
   adjacent: {}
@@ -44,7 +44,7 @@
   overall: unknown
 
 - name: "F: mature platform, shared admin accounts"
-  answers: [4, 4, 4, 4, 4, 4, 4, 4, 3, 4, 1, 3, 4, 5, 4, 4]
+  answers: [4, 4, 4, 4, 3, 4, 4, 4, 4, 4, 3, 4, 1, 3, 4, 5, 4, 4]
   direct: {Human Access: strong}
   presented: [Human Access]
   adjacent:
@@ -54,9 +54,9 @@
   overall: red
 
 - name: "G: capable platform with contradictions"
-  answers: [2, 4, 1, 1, 4, 1, 3, 1, 3, 1, 3, 2, 3, 1, 3, 3]
+  answers: [2, 4, 1, 1, 1, 4, 1, 3, 3, 1, 3, 1, 3, 2, 3, 1, 3, 3]
   direct: {Infrastructure Lifecycle: strong, Image Lifecycle: strong, Machine Identity and Secrets: strong, Human Access: strong, Service Networking: strong}
-  presented: [Image Lifecycle, Human Access, Infrastructure Lifecycle]
+  presented: [Image Lifecycle, Machine Identity and Secrets, Human Access]
   adjacent: {}
   solution_adjacency: []
   patterns: [Day-two change escapes automation, 'Centralised secrets, manual credential lifecycle', Identity without session accountability, Trust by network location, 'Automated infrastructure, unmanaged
@@ -64,16 +64,16 @@
   overall: red
 
 - name: "H: hybrid estate, partly standardised"
-  answers: [4, 3, 2, 2, 3, 4, 4, 4, 4, 4, 4, 3, 2, 3, 3, 2]
-  direct: {Infrastructure Lifecycle: moderate, Image Lifecycle: moderate, Service Networking: moderate, Workload Lifecycle: moderate}
-  presented: [Infrastructure Lifecycle, Image Lifecycle, Service Networking]
+  answers: [4, 3, 2, 2, 2, 3, 4, 4, 3, 4, 4, 4, 4, 3, 2, 3, 3, 2]
+  direct: {Infrastructure Lifecycle: moderate, Image Lifecycle: moderate, Machine Identity and Secrets: moderate, Service Networking: moderate, Workload Lifecycle: moderate}
+  presented: [Image Lifecycle, Infrastructure Lifecycle, Service Networking]
   adjacent: {}
   solution_adjacency: []
   patterns: [Automated delivery with a human gate, 'Distributed estate, fragmented control planes', Non-standard workloads sit outside the main platform, 'Automated infrastructure, unmanaged image lifecycle']
   overall: yellow
 
 - name: "I: consistent deployment, uneven networking"
-  answers: [4, 4, 4, 4, 4, 4, 4, 4, 3, 4, 4, 3, 2, 5, 4, 4]
+  answers: [4, 4, 4, 4, 3, 4, 4, 4, 4, 4, 3, 4, 4, 3, 2, 5, 4, 4]
   direct: {Service Networking: moderate}
   presented: [Service Networking]
   adjacent: {}
@@ -82,7 +82,7 @@
   overall: green
 
 - name: "J: segmented network, no internal certificates"
-  answers: [3, 4, 5, 5, 4, 4, 4, 4, 4, 4, 4, 3, 4, 1, 4, 4]
+  answers: [3, 4, 5, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 3, 4, 1, 4, 4]
   direct: {Service Networking: strong}
   presented: [Service Networking]
   adjacent: {}

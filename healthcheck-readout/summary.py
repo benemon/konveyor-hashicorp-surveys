@@ -99,7 +99,7 @@ def markdown(organisation, readout):
         "# Introduction",
         "",
         f"This document summarises what {escaped(organisation)} told HashiCorp during a 5 Minute HashiCorp "
-        f"Healthcheck on {day}. The healthcheck asks sixteen questions about how infrastructure is "
+        f"Healthcheck on {day}. The healthcheck asks eighteen questions about how infrastructure is "
         "delivered, secured, connected and run.",
         "",
     ]

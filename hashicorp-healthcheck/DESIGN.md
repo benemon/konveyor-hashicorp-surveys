@@ -115,7 +115,7 @@ thresholds:
   unknown: 25
 ```
 
-With 14 to 16 questions this gives:
+With 18 questions this gives:
 
 | Overall | Condition | Message intent |
 |---|---|---|
@@ -124,7 +124,7 @@ With 14 to 16 questions this gives:
 | unknown | neither of the above, four or more unknown | Not enough information for a signal |
 | green | otherwise | No strong or repeated signal overall |
 
-`riskMessages` carries these in signal language. One red answer makes the overall result red. Q1 is unscored but counts in the denominator.
+`riskMessages` carries these in signal language. One red answer makes the overall result red. With 18 questions, two yellow answers are 11.1% and three are needed for an overall yellow; the threshold is a percentage of the questionnaire and is not tuned to its length. Q1 is unscored but counts in the denominator. A capability's own signal does not depend on the overall result.
 
 The overall result is a triage status in MTA. One yellow answer leaves it green while its capability has a moderate signal, so the executive summary does not show it and leads with the capability signals.
 
@@ -213,7 +213,7 @@ The title page uses `healthcheck-readout/cover.pdf` as its background when the f
 
 Every question is single choice and has an explanation shown to the respondent. There is no branching: `includeFor`, `excludeFor` and `autoAnswerFor` are not used. "Direct" and "Adjacent" list the capability tags an answer applies.
 
-Sixteen questions is the limit, and the questionnaire is at it: at about 20 seconds each, sixteen take just over five minutes. A further question must replace one.
+Eighteen questions is the limit, and the questionnaire is at it: at 15 to 20 seconds each, eighteen take between four and a half and six minutes, which is the "5 Minute" of the name. A further question must replace one.
 
 ### Section 1: Environment
 
@@ -264,7 +264,17 @@ Both image questions have a not-applicable answer for organisations that do not 
 | 5 | We do not maintain machine images as part of our delivery model | `not-applicable` | green |  |  |
 | 6 | I don't know | `unknown` | unknown |  |  |
 
-**Q5 (guardrails). How are your organisation's standards and policies applied to new infrastructure?**
+**Q5 (image composition). For a given machine image version in use, could you say what software it contains and what it was built from?**
+
+| # | Answer | Key | Risk | Direct | Adjacent |
+|---|---|---|---|---|---|
+| 1 | No; we would have to inspect a running instance or rebuild it to find out | `unknown-contents` | red | IM |  |
+| 2 | Partly; build definitions show the steps, but not the resulting package versions or the parent image | `build-steps-only` | yellow | IM |  |
+| 3 | Yes; each image version records its contents and the image it was built from | `recorded` | green |  |  |
+| 4 | We do not maintain machine images as part of our delivery model | `not-applicable` | green |  |  |
+| 5 | I don't know | `unknown` | unknown |  |  |
+
+**Q6 (guardrails). How are your organisation's standards and policies applied to new infrastructure?**
 
 | # | Answer | Key | Risk | Direct | Adjacent |
 |---|---|---|---|---|---|
@@ -274,7 +284,7 @@ Both image questions have a not-applicable answer for organisations that do not 
 | 4 | Automated checks run on every change, and teams self-serve within them | `automated` | green |  |  |
 | 5 | I don't know | `unknown` | unknown |  |  |
 
-**Q6 (change and drift). Once infrastructure is built, how are changes made to it?**
+**Q7 (change and drift). Once infrastructure is built, how are changes made to it?**
 
 | # | Answer | Key | Risk | Direct | Adjacent |
 |---|---|---|---|---|---|
@@ -286,7 +296,7 @@ Both image questions have a not-applicable answer for organisations that do not 
 
 ### Section 3: Security and Access
 
-**Q7 (secret storage). How do applications typically obtain credentials such as database passwords or API keys?**
+**Q8 (secret storage). How do applications typically obtain credentials such as database passwords or API keys?**
 
 | # | Answer | Key | Risk | Direct | Adjacent |
 |---|---|---|---|---|---|
@@ -296,7 +306,17 @@ Both image questions have a not-applicable answer for organisations that do not 
 | 4 | They are issued automatically, based on the application's own identity | `identity-issued` | green |  |  |
 | 5 | I don't know | `unknown` | unknown |  |  |
 
-**Q8 (rotation). How long do application credentials usually stay valid?**
+**Q9 (workload identity). How does an application prove its identity when it connects to the systems it depends on?**
+
+| # | Answer | Key | Risk | Direct | Adjacent |
+|---|---|---|---|---|---|
+| 1 | With a credential placed in its configuration or environment at deployment and left in place | `static-credential` | red | MIS |  |
+| 2 | With an account of its own, such as a service account with a password or key that is managed by hand | `service-account` | yellow | MIS |  |
+| 3 | With an identity assigned by its platform or runtime for some workloads, and static credentials for the rest | `partly-platform` | yellow | MIS |  |
+| 4 | With an identity assigned by its platform or runtime, exchanged for short-lived credentials when needed | `platform-issued` | green |  |  |
+| 5 | I don't know | `unknown` | unknown |  |  |
+
+**Q10 (rotation). How long do application credentials usually stay valid?**
 
 | # | Answer | Key | Risk | Direct | Adjacent |
 |---|---|---|---|---|---|
@@ -306,7 +326,7 @@ Both image questions have a not-applicable answer for organisations that do not 
 | 4 | They are short-lived and issued on demand | `short-lived` | green |  |  |
 | 5 | I don't know | `unknown` | unknown |  |  |
 
-**Q9 (certificates). How are certificates for internal services issued and renewed?**
+**Q11 (certificates). How are certificates for internal services issued and renewed?**
 
 | # | Answer | Key | Risk | Direct | Adjacent |
 |---|---|---|---|---|---|
@@ -318,7 +338,7 @@ Both image questions have a not-applicable answer for organisations that do not 
 
 This question covers certificate lifecycle where certificates exist. Whether their absence is a gap is left to the service-to-service security question and to the pattern "Network-centric controls without internal certificates".
 
-**Q10 (access path). How do engineers connect to servers, databases and clusters to administer them?**
+**Q12 (access path). How do engineers connect to servers, databases and clusters to administer them?**
 
 | # | Answer | Key | Risk | Direct | Adjacent |
 |---|---|---|---|---|---|
@@ -328,7 +348,7 @@ This question covers certificate lifecycle where certificates exist. Whether the
 | 4 | Through an access service that connects them only to the systems they are approved for | `brokered` | green |  |  |
 | 5 | I don't know | `unknown` | unknown |  |  |
 
-**Q11 (access credentials). What credentials are used to get into the systems engineers administer?**
+**Q13 (access credentials). What credentials are used to get into the systems engineers administer?**
 
 | # | Answer | Key | Risk | Direct | Adjacent |
 |---|---|---|---|---|---|
@@ -338,7 +358,7 @@ This question covers certificate lifecycle where certificates exist. Whether the
 | 4 | Credentials issued or injected for the session that expire automatically; engineers may never see them | `per-session` | green |  |  |
 | 5 | I don't know | `unknown` | unknown |  |  |
 
-**Q12 (visibility). Could you show who accessed a given production system last week, and what they did?**
+**Q14 (visibility). Could you show who accessed a given production system last week, and what they did?**
 
 | # | Answer | Key | Risk | Direct | Adjacent |
 |---|---|---|---|---|---|
@@ -349,7 +369,7 @@ This question covers certificate lifecycle where certificates exist. Whether the
 
 ### Section 4: Runtime and Connectivity
 
-**Q13 (discovery). How do applications find each other across your environments?**
+**Q15 (discovery). How do applications find each other across your environments?**
 
 | # | Answer | Key | Risk | Direct | Adjacent |
 |---|---|---|---|---|---|
@@ -359,7 +379,7 @@ This question covers certificate lifecycle where certificates exist. Whether the
 | 4 | One discovery layer spans all environments | `spanning-layer` | green |  |  |
 | 5 | I don't know | `unknown` | unknown |  |  |
 
-**Q14 (service-to-service security). How is traffic between applications controlled?**
+**Q16 (service-to-service security). How is traffic between applications controlled?**
 
 | # | Answer | Key | Risk | Direct | Adjacent |
 |---|---|---|---|---|---|
@@ -370,7 +390,7 @@ This question covers certificate lifecycle where certificates exist. Whether the
 | 5 | Services authenticate each other and traffic is encrypted, with one set of rules per service | `service-identity` | green |  |  |
 | 6 | I don't know | `unknown` | unknown |  |  |
 
-**Q15 (deployment). How are application workloads deployed and run?**
+**Q17 (deployment). How are application workloads deployed and run?**
 
 | # | Answer | Key | Risk | Direct | Adjacent |
 |---|---|---|---|---|---|
@@ -380,7 +400,7 @@ This question covers certificate lifecycle where certificates exist. Whether the
 | 4 | On several platforms, through one consistent deployment workflow | `one-workflow` | green |  |  |
 | 5 | I don't know | `unknown` | unknown |  |  |
 
-**Q16 (non-standard workloads). How do you run workloads that don't fit your main platform, such as batch jobs, legacy applications or software that isn't containerised?**
+**Q18 (non-standard workloads). How do you run workloads that don't fit your main platform, such as batch jobs, legacy applications or software that isn't containerised?**
 
 | # | Answer | Key | Risk | Direct | Adjacent |
 |---|---|---|---|---|---|
@@ -403,7 +423,7 @@ This question covers certificate lifecycle where certificates exist. Whether the
 Structure of the questionnaire:
 
 - Required schema fields are present, orders are sequential, every `risk` is one of the four values and every question has an explanation.
-- 14 to 16 questions, each with 4 to 6 answers, and no branching.
+- 14 to 18 questions, each with 4 to 6 answers, and no branching.
 - Every answer has exactly one key, keys are unique, and each question has one facet of its own.
 - Each red or yellow answer applies exactly one `Capability Signal` tag, and all such answers to a question apply the same one. No other answer applies a capability tag.
 - Each scored question has at least one green answer and exactly one unknown answer. Q1 answers are all green.
@@ -438,13 +458,13 @@ Personas, in `personas.yaml`: ten reference respondents, each with its answers a
 | Persona | Shows |
 |---|---|
 | A: highly manual enterprise | Signals in all six capabilities; three presented |
-| B: mature OpenShift platform, static secrets | One strong signal; IL as a solution adjacency note only; no machine images maintained |
+| B: mature OpenShift platform, static secrets | One strong signal; IL as a solution adjacency note only; no machine images maintained; hand-managed service accounts |
 | C: fragmented infrastructure as code | Moderate signals and an overall result of yellow; a published image record that provisioning does not validate |
 | D: mature platform organisation | No signal in any capability; overall green |
 | E: respondent lacks visibility | Six unknown answers; overall unknown |
 | F: mature platform, shared admin accounts | An adjacent signal that is not absorbed |
-| G: capable platform with contradictions | Six patterns; ordering within the strong tier; images built by hand and unmanaged beside codified provisioning |
-| H: hybrid estate, partly standardised | Four moderate signals and four patterns; fragmented image automation |
+| G: capable platform with contradictions | Six patterns; ordering within the strong tier; images built by hand, unmanaged and of unknown contents beside codified provisioning |
+| H: hybrid estate, partly standardised | Five moderate signals and four patterns; fragmented image automation; platform identity for some workloads |
 | I: consistent deployment, uneven networking | One yellow answer: a moderate signal with an overall result of green |
 | J: segmented network, no internal certificates | A pattern that rests on a green answer; an adjacent signal from Service Networking |
 
@@ -487,3 +507,19 @@ On OpenShift the chart builds the two images on the cluster from their Container
 ## 8. Out of scope
 
 The deeper discovery assessment, product-specific discovery beyond the capability pointers in section 4.9, pricing, solution architecture, numerical scoring, sales qualification, CRM integration and any change to MTA itself.
+
+### Operating states added after the deck-era baseline
+
+- How an application proves its identity to the systems it depends on (`workload identity`). Its green answer, platform-assigned identity exchanged for short-lived credentials, means no signal from the question, not that the identity model is well governed.
+- Whether an image version's contents and parent image are recorded (`image composition`). Build definitions alone do not establish either.
+
+### Deliberate coverage boundaries
+
+Conditions reviewed and left out of the questionnaire on purpose, so that their absence is not mistaken for an oversight. Each stays out until a question can establish it directly within the time budget.
+
+- Identity for workloads that never obtain a credential. The workload identity question asks how an application proves itself to the systems it depends on; a workload with no such dependency is not covered.
+- Delegated, transaction-scoped authority for agents acting independently or for a user. Few respondents can report an operating condition yet; the Vault talk track raises it after workload identity.
+- Policy frameworks in beta. The guardrail answers point at production policy mechanisms only; a beta framework joins the pointers when it leaves beta.
+- Multi-port service configuration and certificate telemetry in a service mesh. No answer establishes that the respondent runs a mesh, so neither is attributed; both are facilitator knowledge.
+- Workload identity issued by a scheduler. Orchestration fragmentation establishes no identity problem; the Nomad talk track links the two conversations and the workload identity question carries the evidence.
+- Whether credentials pass through infrastructure-as-code plan and state. No answer establishes it; the Terraform talk track covers ephemeral values and write-only arguments as implementation guidance.

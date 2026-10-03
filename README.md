@@ -2,7 +2,7 @@
 
 ## The 5 Minute HashiCorp Healthcheck
 
-A 16-question Konveyor questionnaire for a booth or introductory session. A technical practitioner answers it in about five minutes. No knowledge of HashiCorp products is needed.
+An 18-question Konveyor questionnaire for a booth or introductory session. A technical practitioner answers it in around five minutes. No knowledge of HashiCorp products is needed.
 
 It indicates whether a deeper discovery session is warranted, and in which of six capability areas it should start: infrastructure lifecycle, image lifecycle, machine identity and secrets, human access, service networking and workload lifecycle.
 
