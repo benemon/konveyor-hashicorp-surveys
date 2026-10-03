@@ -12,7 +12,8 @@ POINTERS = {
             ),
             ("Private registry modules and providers", "reusable, versioned infrastructure patterns"),
             ("No-code provisioning", "self-service consumption of approved modules"),
-            ("Search and import", "bring existing manually created infrastructure under Terraform management"),
+            ("Terraform Search", "discover existing resources that are not yet managed"),
+            ("Config-driven import", "bring existing manually created infrastructure under Terraform management"),
         ],
     },
     "provisioning: team-scripts": {
@@ -100,19 +101,18 @@ POINTERS = {
     },
     "change and drift: by-hand": {
         "Terraform": [
-            ("HCP Terraform health assessments", "ongoing assessment after provisioning"),
             ("Drift detection", "identify out-of-band changes against Terraform configuration"),
             ("Continuous validation", "verify that custom assertions continue to hold after deployment"),
             (
                 "Managed plan and apply workflow",
                 "deliberately reconcile actual infrastructure with desired configuration",
             ),
-            ("Search and import", "onboard resources that are not yet managed"),
+            ("Terraform Search", "discover resources that are not yet managed"),
+            ("Config-driven import", "bring them under Terraform management"),
         ],
     },
     "change and drift: mixed": {
         "Terraform": [
-            ("HCP Terraform health assessments", ""),
             ("Drift detection", "periodically detect configuration divergence"),
             ("Continuous validation", "detect operational conditions that fail even without configuration drift"),
             ("Workspace health visibility and Explorer", "identify unhealthy or drifted workspaces at scale"),
@@ -288,11 +288,6 @@ POINTERS = {
             ("Intentions", "explicitly allow or deny communication by service identity, not IP or location"),
             ("Transparent proxy", "where applications should adopt the mesh without code changes"),
         ],
-        "Vault": [
-            ("PKI secrets engine", "issue and renew the certificates that identify workloads"),
-            ("PKI roles", "define issuance policy by workload or use case"),
-            ("Short-lived certificates", "reduce credential lifetime; automated issuance and renewal make short lifetimes practical"),
-        ],
     },
     "service-to-service security: manual-rules": {
         "Consul": [
@@ -303,11 +298,6 @@ POINTERS = {
                 "Central policy configuration",
                 "decouple policy from individual IP addresses and firewall tickets",
             ),
-        ],
-        "Vault": [
-            ("PKI secrets engine", "issue and renew the certificates that identify workloads"),
-            ("PKI roles", "define issuance policy by workload or use case"),
-            ("Short-lived certificates", "reduce credential lifetime; automated issuance and renewal make short lifetimes practical"),
         ],
     },
     "service-to-service security: per-environment": {
