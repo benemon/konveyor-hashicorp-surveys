@@ -16,7 +16,7 @@ sections:
       - category: Answer Key
         tag: 'environment: one-cloud'
       - category: Questionnaire Version
-        tag: '0.6'
+        tag: '0.7'
     - order: 2
       text: Across several public clouds
       risk: green
@@ -24,7 +24,7 @@ sections:
       - category: Answer Key
         tag: 'environment: several-clouds'
       - category: Questionnaire Version
-        tag: '0.6'
+        tag: '0.7'
     - order: 3
       text: Mostly in our own data centres
       risk: green
@@ -32,7 +32,7 @@ sections:
       - category: Answer Key
         tag: 'environment: own-data-centres'
       - category: Questionnaire Version
-        tag: '0.6'
+        tag: '0.7'
     - order: 4
       text: A mix of our own data centres and public cloud
       risk: green
@@ -40,7 +40,7 @@ sections:
       - category: Answer Key
         tag: 'environment: hybrid'
       - category: Questionnaire Version
-        tag: '0.6'
+        tag: '0.7'
 - order: 2
   name: Infrastructure Delivery
   questions:
@@ -380,8 +380,8 @@ sections:
     - order: 1
       text: With a credential placed in its configuration or environment at deployment and left in place
       risk: red
-      rationale: A credential placed at deployment and left in place is as exposed as the place it sits, and identifies the deployment rather than the running workload.
-      mitigation: Give workloads an identity assigned by their platform or runtime, and exchange it for short-lived credentials when they are needed.
+      rationale: A credential placed at deployment and left in place is a standing credential. If it is exposed, it remains usable until it is changed or revoked.
+      mitigation: Give workloads an identity assigned automatically by their platform, runtime or a workload identity system, used directly or exchanged for short-lived credentials where needed.
       applyTags:
       - category: Answer Key
         tag: 'workload identity: static-credential'
@@ -391,24 +391,24 @@ sections:
       text: With an account of its own, such as a service account with a password or key that is managed by hand
       risk: yellow
       rationale: A hand-managed service account credential has to be distributed, protected and rotated by hand, like any other secret.
-      mitigation: Replace hand-managed service account credentials with an identity the platform or runtime assigns, so that no long-lived credential needs distributing.
+      mitigation: Replace hand-managed service account credentials with an identity assigned automatically by the platform, runtime or a workload identity system, so that no long-lived credential needs distributing.
       applyTags:
       - category: Answer Key
         tag: 'workload identity: service-account'
       - category: Capability Signal
         tag: Machine Identity and Secrets
     - order: 3
-      text: With an identity assigned by its platform or runtime for some workloads, and static credentials for the rest
+      text: With an automatically assigned identity for some workloads, and static credentials for the rest
       risk: yellow
       rationale: Two identity models mean two sets of controls to govern, and the workloads still on static credentials carry the exposure those credentials bring.
-      mitigation: Extend platform-assigned identity to the remaining workloads, prioritising those whose static credentials reach the most sensitive systems.
+      mitigation: Extend automatically assigned identity to the remaining workloads, prioritising those whose static credentials reach the most sensitive systems.
       applyTags:
       - category: Answer Key
         tag: 'workload identity: partly-platform'
       - category: Capability Signal
         tag: Machine Identity and Secrets
     - order: 4
-      text: With an identity assigned by its platform or runtime, exchanged for short-lived credentials when needed
+      text: With a verifiable identity assigned automatically by its platform, runtime or a workload identity system, and no long-lived credential distributed at deployment
       risk: green
       applyTags:
       - category: Answer Key

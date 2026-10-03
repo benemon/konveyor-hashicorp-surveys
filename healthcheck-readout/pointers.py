@@ -101,13 +101,13 @@ POINTERS = {
     },
     "image composition: unknown-contents": {
         "Packer": [
-            ("Metadata and ancestry", "what each image version contains and was built from"),
-            ("SBOM association", "a software bill of materials per artefact version"),
+            ("Metadata and ancestry", "build metadata and parent image relationships"),
+            ("SBOM association", "the software and package inventory of each artefact version"),
         ],
     },
     "image composition: build-steps-only": {
         "Packer": [
-            ("Metadata and ancestry", "the parent image and build inputs of each version"),
+            ("Metadata and ancestry", "the parent image and build inputs of each version, not its contents"),
             ("SBOM association", "the resulting package inventory per artefact version"),
         ],
     },
