@@ -4,7 +4,7 @@ DIRECT = "Capability Signal"
 ADJACENT = "Adjacent Capability Signal"
 # Identifies the interpretation and rendering rules that produced a result. The questionnaire
 # has its own version, carried in the assessment.
-VERSION = "0.7"
+VERSION = "0.8"
 
 # "<facet>: <key>", one per answer. The category is never created in MTA, so the hub keeps
 # the tag in the assessment but off applications.
@@ -133,7 +133,9 @@ FOLLOW_UP = {
         "product": "Terraform",
         "colour": "#7B42BC",
         "talk_track": "Drift detection identifies divergence but does not remediate it automatically. Remediation "
-        "returns through a run, once it is decided whether the external change is kept or overwritten.",
+        "returns through a run, once it is decided whether the external change is kept or overwritten. Where "
+        "Terraform handles credentials, ephemeral values and write-only arguments keep them out of plan and state; "
+        "marking a value sensitive only redacts it.",
     },
     "Image Lifecycle": {
         "topics": "How machine images are built, which versions are approved and how outdated images are retired",
@@ -152,7 +154,8 @@ FOLLOW_UP = {
         "product": "Vault",
         "colour": "#FFCF25",
         "talk_track": "A useful progression: store secrets, automate rotation, eliminate standing credentials, "
-        "then establish workload identity with short-lived credentials.",
+        "then establish workload identity with short-lived credentials. Delegated, transaction-scoped authority "
+        "for agents acting for a user is the same question one step on, and worth raising once workload identity is.",
     },
     "Human Access": {
         "topics": "How engineers reach systems, what they sign in with and how access is recorded",
@@ -177,7 +180,8 @@ FOLLOW_UP = {
         "product": "Nomad",
         "colour": "#06D092",
         "talk_track": "Task drivers include Docker, isolated exec, Java, QEMU and raw exec, so bringing a workload "
-        "under a scheduler does not mean containerising it first.",
+        "under a scheduler does not mean containerising it first. A scheduler can also be where workloads get their "
+        "identity, which links this conversation to the Machine Identity one.",
     },
 }
 

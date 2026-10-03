@@ -16,7 +16,7 @@ sections:
       - category: Answer Key
         tag: 'environment: one-cloud'
       - category: Questionnaire Version
-        tag: '0.5'
+        tag: '0.6'
     - order: 2
       text: Across several public clouds
       risk: green
@@ -24,7 +24,7 @@ sections:
       - category: Answer Key
         tag: 'environment: several-clouds'
       - category: Questionnaire Version
-        tag: '0.5'
+        tag: '0.6'
     - order: 3
       text: Mostly in our own data centres
       risk: green
@@ -32,7 +32,7 @@ sections:
       - category: Answer Key
         tag: 'environment: own-data-centres'
       - category: Questionnaire Version
-        tag: '0.5'
+        tag: '0.6'
     - order: 4
       text: A mix of our own data centres and public cloud
       risk: green
@@ -40,7 +40,7 @@ sections:
       - category: Answer Key
         tag: 'environment: hybrid'
       - category: Questionnaire Version
-        tag: '0.5'
+        tag: '0.6'
 - order: 2
   name: Infrastructure Delivery
   questions:
@@ -195,6 +195,48 @@ sections:
       - category: Answer Key
         tag: 'image lifecycle: unknown'
   - order: 4
+    text: For a given machine image version in use, could you say what software it contains and what it was built from?
+    explanation: Consider whether you could answer a vulnerability or audit question about an image without rebuilding or inspecting it by hand.
+    answers:
+    - order: 1
+      text: No; we would have to inspect a running instance or rebuild it to find out
+      risk: red
+      rationale: Without a record of an image's contents, a vulnerability or audit question about running systems can be answered only by inspecting or rebuilding them.
+      mitigation: Record each image version's contents and the image it was built from at build time, so that questions about running systems can be answered from the record.
+      applyTags:
+      - category: Answer Key
+        tag: 'image composition: unknown-contents'
+      - category: Capability Signal
+        tag: Image Lifecycle
+    - order: 2
+      text: Partly; build definitions show the steps, but not the resulting package versions or the parent image
+      risk: yellow
+      rationale: Build steps show what was asked for, not the package versions that resulted or the parent image they were applied to, so the record is incomplete at the point a vulnerability is announced.
+      mitigation: Capture the resulting package inventory and parent image with each image version, alongside the build definition.
+      applyTags:
+      - category: Answer Key
+        tag: 'image composition: build-steps-only'
+      - category: Capability Signal
+        tag: Image Lifecycle
+    - order: 3
+      text: Yes; each image version records its contents and the image it was built from
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'image composition: recorded'
+    - order: 4
+      text: We do not maintain machine images as part of our delivery model
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'image composition: not-applicable'
+    - order: 5
+      text: I don't know
+      risk: unknown
+      applyTags:
+      - category: Answer Key
+        tag: 'image composition: unknown'
+  - order: 5
     text: How are your organisation's standards and policies applied to new infrastructure?
     explanation: Standards include security rules, cost limits, naming and approved configurations. Choose how they are usually checked when infrastructure is created or changed.
     answers:
@@ -240,7 +282,7 @@ sections:
       applyTags:
       - category: Answer Key
         tag: 'guardrails: unknown'
-  - order: 5
+  - order: 6
     text: Once infrastructure is built, how are changes made to it?
     explanation: Consider routine changes after the first deployment, such as resizing, patching or reconfiguring. A difference means the running infrastructure no longer matches its definition.
     answers:
@@ -332,6 +374,52 @@ sections:
       - category: Answer Key
         tag: 'secret storage: unknown'
   - order: 2
+    text: How does an application prove its identity when it connects to the systems it depends on?
+    explanation: Think about how a service, job or virtual machine authenticates to a database, a secrets store or another service. Choose how most of your workloads do it.
+    answers:
+    - order: 1
+      text: With a credential placed in its configuration or environment at deployment and left in place
+      risk: red
+      rationale: A credential placed at deployment and left in place is as exposed as the place it sits, and identifies the deployment rather than the running workload.
+      mitigation: Give workloads an identity assigned by their platform or runtime, and exchange it for short-lived credentials when they are needed.
+      applyTags:
+      - category: Answer Key
+        tag: 'workload identity: static-credential'
+      - category: Capability Signal
+        tag: Machine Identity and Secrets
+    - order: 2
+      text: With an account of its own, such as a service account with a password or key that is managed by hand
+      risk: yellow
+      rationale: A hand-managed service account credential has to be distributed, protected and rotated by hand, like any other secret.
+      mitigation: Replace hand-managed service account credentials with an identity the platform or runtime assigns, so that no long-lived credential needs distributing.
+      applyTags:
+      - category: Answer Key
+        tag: 'workload identity: service-account'
+      - category: Capability Signal
+        tag: Machine Identity and Secrets
+    - order: 3
+      text: With an identity assigned by its platform or runtime for some workloads, and static credentials for the rest
+      risk: yellow
+      rationale: Two identity models mean two sets of controls to govern, and the workloads still on static credentials carry the exposure those credentials bring.
+      mitigation: Extend platform-assigned identity to the remaining workloads, prioritising those whose static credentials reach the most sensitive systems.
+      applyTags:
+      - category: Answer Key
+        tag: 'workload identity: partly-platform'
+      - category: Capability Signal
+        tag: Machine Identity and Secrets
+    - order: 4
+      text: With an identity assigned by its platform or runtime, exchanged for short-lived credentials when needed
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'workload identity: platform-issued'
+    - order: 5
+      text: I don't know
+      risk: unknown
+      applyTags:
+      - category: Answer Key
+        tag: 'workload identity: unknown'
+  - order: 3
     text: How long do application credentials usually stay valid?
     explanation: Consider the credentials applications use to reach databases, queues and other services. Choose what happens for most of them.
     answers:
@@ -373,7 +461,7 @@ sections:
       applyTags:
       - category: Answer Key
         tag: 'rotation: unknown'
-  - order: 3
+  - order: 4
     text: How are certificates for internal services issued and renewed?
     explanation: Internal services are those reached only from inside your organisation. Consider the certificates they use to identify themselves and to encrypt traffic.
     answers:
@@ -415,7 +503,7 @@ sections:
       applyTags:
       - category: Answer Key
         tag: 'certificates: unknown'
-  - order: 4
+  - order: 5
     text: How do engineers connect to servers, databases and clusters to administer them?
     explanation: Consider the network route an engineer takes to reach a production system for maintenance or troubleshooting.
     answers:
@@ -461,7 +549,7 @@ sections:
       applyTags:
       - category: Answer Key
         tag: 'access path: unknown'
-  - order: 5
+  - order: 6
     text: What credentials are used to get into the systems engineers administer?
     explanation: Consider the account, key or password presented to the server, database or cluster itself, however the engineer reached it.
     answers:
@@ -505,7 +593,7 @@ sections:
       applyTags:
       - category: Answer Key
         tag: 'access credentials: unknown'
-  - order: 6
+  - order: 7
     text: Could you show who accessed a given production system last week, and what they did?
     explanation: 'Think of an audit request or an incident investigation: could you produce a record of who connected, and of what they did during the session?'
     answers:

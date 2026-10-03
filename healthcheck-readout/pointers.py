@@ -99,8 +99,21 @@ POINTERS = {
             ("Revocation", "prevent reuse of revoked images"),
         ],
     },
+    "image composition: unknown-contents": {
+        "Packer": [
+            ("Metadata and ancestry", "what each image version contains and was built from"),
+            ("SBOM association", "a software bill of materials per artefact version"),
+        ],
+    },
+    "image composition: build-steps-only": {
+        "Packer": [
+            ("Metadata and ancestry", "the parent image and build inputs of each version"),
+            ("SBOM association", "the resulting package inventory per artefact version"),
+        ],
+    },
     "change and drift: by-hand": {
         "Terraform": [
+            ("Terraform Actions", "codified day-two operations run through the workflow, separate from drift detection"),
             ("Drift detection", "identify out-of-band changes against Terraform configuration"),
             ("Continuous validation", "verify that custom assertions continue to hold after deployment"),
             (
@@ -113,6 +126,7 @@ POINTERS = {
     },
     "change and drift: mixed": {
         "Terraform": [
+            ("Terraform Actions", "codified day-two operations run through the workflow, separate from drift detection"),
             ("Drift detection", "periodically detect configuration divergence"),
             ("Continuous validation", "detect operational conditions that fail even without configuration drift"),
             ("Workspace health visibility and Explorer", "identify unhealthy or drifted workspaces at scale"),
@@ -121,6 +135,7 @@ POINTERS = {
     },
     "change and drift: fixed-by-hand": {
         "Terraform": [
+            ("Terraform Actions", "codified day-two operations run through the workflow, separate from drift detection"),
             ("Drift detection", "discover divergence automatically"),
             ("Continuous validation", "continually evaluate Terraform checks, preconditions and postconditions"),
             (
@@ -148,7 +163,29 @@ POINTERS = {
             ("Auth methods and identity", "common authentication for workloads and people"),
             ("Audit devices", "centralised auditability"),
             ("Namespaces", "organisational isolation under common governance"),
-            ("Secrets sync", "where existing platforms must keep consuming secrets through their native stores"),
+            ("Secrets sync", "where existing platforms must keep consuming secrets through their native stores; workload identity federation reaches supported destinations without a standing cloud credential"),
+        ],
+    },
+    "workload identity: static-credential": {
+        "Vault": [
+            ("Platform and cloud auth methods", "authenticate a workload with the identity its platform already gives it"),
+            ("AppRole", "a bridge for workloads that cannot present a platform or runtime identity; not the target state"),
+            ("SPIFFE and SVID support", "a portable workload identity across platforms"),
+            ("Dynamic secrets", "short-lived credentials issued to the authenticated workload"),
+        ],
+    },
+    "workload identity: service-account": {
+        "Vault": [
+            ("Platform and cloud auth methods", "replace hand-managed service account credentials"),
+            ("Dynamic secrets", "credentials issued on demand with a lease, in place of a standing account"),
+            ("Credential rotation", "for accounts that have to remain"),
+        ],
+    },
+    "workload identity: partly-platform": {
+        "Vault": [
+            ("Platform and cloud auth methods", "one authentication model across platforms"),
+            ("AppRole", "cover the workloads whose platform offers no identity"),
+            ("SPIFFE and SVID support", "a common identity across the remaining platforms"),
         ],
     },
     "rotation: rarely": {
@@ -248,7 +285,7 @@ POINTERS = {
     },
     "visibility: who-only": {
         "Boundary": [
-            ("Session recording", "record supported privileged sessions"),
+            ("Session recording", "record SSH and RDP sessions"),
             ("Recording storage and playback", "retain activity for investigation and review"),
             ("Session metadata", "tie the recording to its user and target"),
         ],

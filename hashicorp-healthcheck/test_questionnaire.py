@@ -23,7 +23,7 @@ CONTEXT, SCORED = QUESTIONS[0], QUESTIONS[1:]
 CROSS_TAGS = {
     "access credentials: shared": {"Machine Identity and Secrets"},
 }
-IMAGE_KEYS = {"image build", "image lifecycle"}
+IMAGE_KEYS = {"image build", "image lifecycle", "image composition"}
 
 PRODUCTS = re.compile(r"terraform|packer|vault|boundary|consul|nomad|hashicorp", re.IGNORECASE)
 
@@ -100,7 +100,7 @@ class Structure(unittest.TestCase):
                 self.assertFalse(tags(answer, QUESTIONNAIRE_VERSION))
 
     def test_question_and_answer_counts(self):
-        self.assertTrue(14 <= len(QUESTIONS) <= 16, len(QUESTIONS))
+        self.assertTrue(14 <= len(QUESTIONS) <= 18, len(QUESTIONS))
         for question in QUESTIONS:
             self.assertTrue(4 <= len(question["answers"]) <= 6, question["text"])
 
@@ -213,7 +213,7 @@ class Structure(unittest.TestCase):
 
     def test_image_questions_signal_only_on_red_and_yellow(self):
         questions = [q for q in SCORED if next(iter(tags(q["answers"][0], KEY))).split(": ")[0] in IMAGE_KEYS]
-        self.assertEqual(len(questions), 2)
+        self.assertEqual(len(questions), 3)
         for question in questions:
             keys = {next(iter(tags(a, KEY))).split(": ")[1] for a in question["answers"]}
             self.assertIn("not-applicable", keys)
