@@ -120,7 +120,7 @@ With 18 questions this gives:
 | Overall | Condition | Message intent |
 |---|---|---|
 | red | one or more red answers | Follow-up discussion indicated |
-| yellow | no red, two or more yellow | Areas worth exploring |
+| yellow | no red, three or more yellow | Areas worth exploring |
 | unknown | neither of the above, four or more unknown | Not enough information for a signal |
 | green | otherwise | No strong or repeated signal overall |
 
@@ -312,8 +312,8 @@ Both image questions have a not-applicable answer for organisations that do not 
 |---|---|---|---|---|---|
 | 1 | With a credential placed in its configuration or environment at deployment and left in place | `static-credential` | red | MIS |  |
 | 2 | With an account of its own, such as a service account with a password or key that is managed by hand | `service-account` | yellow | MIS |  |
-| 3 | With an identity assigned by its platform or runtime for some workloads, and static credentials for the rest | `partly-platform` | yellow | MIS |  |
-| 4 | With an identity assigned by its platform or runtime, exchanged for short-lived credentials when needed | `platform-issued` | green |  |  |
+| 3 | With an automatically assigned identity for some workloads, and static credentials for the rest | `partly-platform` | yellow | MIS |  |
+| 4 | With a verifiable identity assigned automatically by its platform, runtime or a workload identity system, and no long-lived credential distributed at deployment | `platform-issued` | green |  |  |
 | 5 | I don't know | `unknown` | unknown |  |  |
 
 **Q10 (rotation). How long do application credentials usually stay valid?**
@@ -510,7 +510,7 @@ The deeper discovery assessment, product-specific discovery beyond the capabilit
 
 ### Operating states added after the deck-era baseline
 
-- How an application proves its identity to the systems it depends on (`workload identity`). Its green answer, platform-assigned identity exchanged for short-lived credentials, means no signal from the question, not that the identity model is well governed.
+- How an application proves its identity to the systems it depends on (`workload identity`). The identity may come from the platform, the runtime or a workload identity system, and may be used directly or exchanged for short-lived credentials. Its green answer means no signal from the question, not that the identity model is well governed.
 - Whether an image version's contents and parent image are recorded (`image composition`). Build definitions alone do not establish either.
 
 ### Deliberate coverage boundaries
