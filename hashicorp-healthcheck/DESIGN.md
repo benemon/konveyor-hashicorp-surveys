@@ -196,12 +196,12 @@ The summary is the document sent to the respondent after the session. `healthche
 
 It contains:
 
-1. a title page with the organisation and the date the readout was generated;
-2. an introduction, with a table of the environment, the areas highlighted and the areas with no signal;
-3. one section per presented area (section 4.7), in ranked order, with a row per red or yellow answer: the aspect, the answer given, and its rationale and mitigation. A section is not split across pages. When more areas have a signal, the introduction says that three are shown;
+1. a title page with the organisation as its title, the healthcheck's name as its subtitle and the date the readout was generated;
+2. an introduction, with a table of the environment, the areas highlighted and the areas not highlighted;
+3. one section per presented area (section 4.7), in ranked order, with a row per red or yellow answer: the aspect, the answer given, and its rationale and mitigation. A section is not split across pages. When more areas have a signal, the section's heading is followed by a sentence saying that three of them are covered in detail, in order of strength;
 4. the patterns that hold;
 5. the questions answered "unknown";
-6. a next step per presented area, naming the product and the roles worth involving.
+6. a next step per presented area, with the product's mark, naming the product and the roles worth involving.
 
 When no area has a signal, the introduction says so, and the summary has no next steps and makes no claim that further discussion would help.
 
@@ -493,6 +493,7 @@ healthcheck-readout/
 healthcheck-console/
 ├── Containerfile
 ├── app.py
+├── fetch.py
 └── index.html
 kind/
 ├── cluster.yaml

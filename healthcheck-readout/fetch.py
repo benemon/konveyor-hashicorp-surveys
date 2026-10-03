@@ -1,5 +1,7 @@
 import io
 import platform
+import subprocess
+import sys
 import tarfile
 import urllib.request
 import zipfile
@@ -47,6 +49,16 @@ Path("/usr/share/fonts/plex").mkdir(parents=True)
 for name in fonts.namelist():
     if name.endswith(".otf") and "/complete/otf/" in name:
         Path("/usr/share/fonts/plex", name.rsplit("/", 1)[1]).write_bytes(fonts.read(name))
+
+# The product marks are Flight icons, which are SVG; the summary includes them as PDF.
+subprocess.run([sys.executable, "-m", "pip", "install", "--quiet", "svglib", "reportlab"], check=True)
+from reportlab.graphics import renderPDF  # noqa: E402
+from svglib.svglib import svg2rlg  # noqa: E402
+
+summary.LOGOS.mkdir(parents=True)
+for product in summary.FOLLOW_UP_PRODUCTS:
+    svg = get(f"https://unpkg.com/@hashicorp/flight-icons/svg/{product.lower()}-color-24.svg")
+    renderPDF.drawToFile(svg2rlg(svg), str(summary.LOGOS / f"{product}.pdf"))
 
 # Tectonic downloads the TeX files a document needs on first use. Rendering a summary that
 # uses every construct here puts them in the image, so the addon needs no network.
