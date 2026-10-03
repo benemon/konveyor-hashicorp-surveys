@@ -57,6 +57,47 @@ POINTERS = {
             ),
         ],
     },
+    "image build: manual": {
+        "Packer": [
+            ("Images as code", "image definitions in HCL under version control"),
+            ("Builders and provisioners", "repeatable automated builds"),
+            ("Version-control collaboration", "image definitions reviewed and changed like other code"),
+        ],
+    },
+    "image build: fragmented-automation": {
+        "Packer": [
+            ("A common build workflow", "one workflow across the supported public and private platforms"),
+            ("Shared provisioning and customisation steps", ""),
+            ("Parallel builds", "the same definition built for several platforms at once, where useful"),
+        ],
+    },
+    "image build: team-patterns": {
+        "Packer": [
+            ("Reusable image definitions", "a golden-image pipeline built from a common baseline"),
+            ("Build metadata published to HCP Packer", ""),
+        ],
+    },
+    "image lifecycle: unmanaged-versions": {
+        "Packer": [
+            ("HCP Packer artefact registry", "the system of record for image artefacts"),
+            ("Metadata and ancestry", "what each image was built from"),
+            ("Channels", "approved versions for consumers"),
+        ],
+    },
+    "image lifecycle: manual-governance": {
+        "Packer": [
+            ("Channels and assignment history", "promotion in place of documentation and notification"),
+            ("Image revocation and end of life", ""),
+            ("Downstream discovery through HCP Packer integrations", ""),
+        ],
+    },
+    "image lifecycle: central-no-validation": {
+        "Packer": [
+            ("HCP Terraform run task", "image validation during provisioning"),
+            ("Drift detection and continuous validation against image metadata", ""),
+            ("Revocation", "prevent reuse of revoked images"),
+        ],
+    },
     "change and drift: by-hand": {
         "Terraform": [
             ("HCP Terraform health assessments", "ongoing assessment after provisioning"),
@@ -82,7 +123,6 @@ POINTERS = {
         "Terraform": [
             ("Drift detection", "discover divergence automatically"),
             ("Continuous validation", "continually evaluate Terraform checks, preconditions and postconditions"),
-            ("Health assessments", "combine both forms of lifecycle monitoring"),
             (
                 "Plan and apply",
                 "controlled reconciliation, either restoring desired state or updating configuration to accept the change",
@@ -138,7 +178,7 @@ POINTERS = {
             ("Short-lived certificates", ""),
             ("Certificate renewal and revocation", ""),
             ("ACME support", "a standard protocol for automated certificate lifecycle"),
-            ("Integrations such as cert-manager", "where Kubernetes or OpenShift workloads need automated issuance"),
+            ("Integrations such as cert-manager", "where Kubernetes workloads need automated issuance"),
         ],
     },
     "certificates: partly-automated": {
@@ -230,14 +270,14 @@ POINTERS = {
         "Consul": [
             (
                 "Service discovery across heterogeneous runtimes",
-                "a common catalogue for VM, Kubernetes, OpenShift and other environments",
+                "a common discovery layer across Kubernetes, VMs, ECS, Lambda, Nomad and bare metal",
             ),
             ("DNS and API discovery", "a common consumption model"),
             (
                 "Cluster peering and cross-cluster service discovery",
                 "where environments are separate Consul clusters",
             ),
-            ("Mesh gateways", "where connectivity across networks is also required"),
+            ("Mesh gateways", "only where connectivity across separate or private networks is established"),
         ],
     },
     "service-to-service security: network-location": {

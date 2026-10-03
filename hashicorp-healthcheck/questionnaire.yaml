@@ -16,7 +16,7 @@ sections:
       - category: Answer Key
         tag: 'environment: one-cloud'
       - category: Questionnaire Version
-        tag: '0.4'
+        tag: '0.5'
     - order: 2
       text: Across several public clouds
       risk: green
@@ -24,7 +24,7 @@ sections:
       - category: Answer Key
         tag: 'environment: several-clouds'
       - category: Questionnaire Version
-        tag: '0.4'
+        tag: '0.5'
     - order: 3
       text: Mostly in our own data centres
       risk: green
@@ -32,7 +32,7 @@ sections:
       - category: Answer Key
         tag: 'environment: own-data-centres'
       - category: Questionnaire Version
-        tag: '0.4'
+        tag: '0.5'
     - order: 4
       text: A mix of our own data centres and public cloud
       risk: green
@@ -40,7 +40,7 @@ sections:
       - category: Answer Key
         tag: 'environment: hybrid'
       - category: Questionnaire Version
-        tag: '0.4'
+        tag: '0.5'
 - order: 2
   name: Infrastructure Delivery
   questions:
@@ -91,6 +91,110 @@ sections:
       - category: Answer Key
         tag: 'provisioning: unknown'
   - order: 2
+    text: How are machine images used for servers or compute instances created and maintained?
+    explanation: Think about the base images used to launch virtual machines or similar compute. Choose how most of those images are built and updated.
+    answers:
+    - order: 1
+      text: Built or updated by hand, with steps documented in tickets, runbooks or checklists
+      risk: red
+      rationale: Manual image construction is difficult to reproduce consistently and increases the chance of configuration drift between image versions.
+      mitigation: Codify image creation and customisation in a repeatable, version-controlled build workflow.
+      applyTags:
+      - category: Answer Key
+        tag: 'image build: manual'
+      - category: Capability Signal
+        tag: Image Lifecycle
+    - order: 2
+      text: Automated, but each platform or team maintains a different build process
+      risk: yellow
+      rationale: Automation exists, but separate build workflows make consistency, reuse and cross-platform governance harder.
+      mitigation: Standardise on a common image-build workflow that can produce consistent artefacts across required platforms.
+      applyTags:
+      - category: Answer Key
+        tag: 'image build: fragmented-automation'
+      - category: Capability Signal
+        tag: Image Lifecycle
+    - order: 3
+      text: Built automatically from version-controlled definitions, but teams maintain their own patterns
+      risk: yellow
+      rationale: Builds are reproducible, but reusable standards and common image patterns are not yet consistent across the organisation.
+      mitigation: Publish and reuse approved image patterns so teams can build from a common baseline.
+      applyTags:
+      - category: Answer Key
+        tag: 'image build: team-patterns'
+      - category: Capability Signal
+        tag: Image Lifecycle
+    - order: 4
+      text: Built automatically from version-controlled, reusable image definitions
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'image build: codified'
+    - order: 5
+      text: We do not maintain machine images as part of our delivery model
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'image build: not-applicable'
+    - order: 6
+      text: I don't know
+      risk: unknown
+      applyTags:
+      - category: Answer Key
+        tag: 'image build: unknown'
+  - order: 3
+    text: Once machine images are published, how do teams know which versions are approved and what happens when an image becomes outdated or vulnerable?
+    explanation: Consider how image versions are discovered, promoted, tracked and prevented from being reused after a security issue or end-of-life decision.
+    answers:
+    - order: 1
+      text: Teams choose image IDs or versions themselves; there is no central record of approved versions
+      risk: red
+      rationale: Without a central source of approved image versions, consumers can continue to use outdated or inconsistent artefacts.
+      mitigation: Establish a central image registry as the system of record, with metadata and approved versions.
+      applyTags:
+      - category: Answer Key
+        tag: 'image lifecycle: unmanaged-versions'
+      - category: Capability Signal
+        tag: Image Lifecycle
+    - order: 2
+      text: Approved images are documented centrally, but updates and retirement are communicated and enforced manually
+      risk: yellow
+      rationale: A standard exists, but lifecycle control depends on people updating references and preventing reuse.
+      mitigation: Use explicit promotion channels and lifecycle controls rather than relying on documentation and notification alone.
+      applyTags:
+      - category: Answer Key
+        tag: 'image lifecycle: manual-governance'
+      - category: Capability Signal
+        tag: Image Lifecycle
+    - order: 3
+      text: Approved versions are published centrally, but downstream consumers are not automatically checked against them
+      risk: yellow
+      rationale: The system of record exists, but outdated or revoked image use may persist without validation in downstream provisioning.
+      mitigation: Integrate image status validation into downstream provisioning and define a revocation process for vulnerable or end-of-life images.
+      applyTags:
+      - category: Answer Key
+        tag: 'image lifecycle: central-no-validation'
+      - category: Capability Signal
+        tag: Image Lifecycle
+    - order: 4
+      text: Approved versions are published centrally and downstream workflows validate them; outdated or vulnerable images can be revoked
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'image lifecycle: governed'
+    - order: 5
+      text: We do not maintain machine images as part of our delivery model
+      risk: green
+      applyTags:
+      - category: Answer Key
+        tag: 'image lifecycle: not-applicable'
+    - order: 6
+      text: I don't know
+      risk: unknown
+      applyTags:
+      - category: Answer Key
+        tag: 'image lifecycle: unknown'
+  - order: 4
     text: How are your organisation's standards and policies applied to new infrastructure?
     explanation: Standards include security rules, cost limits, naming and approved configurations. Choose how they are usually checked when infrastructure is created or changed.
     answers:
@@ -136,7 +240,7 @@ sections:
       applyTags:
       - category: Answer Key
         tag: 'guardrails: unknown'
-  - order: 3
+  - order: 5
     text: Once infrastructure is built, how are changes made to it?
     explanation: Consider routine changes after the first deployment, such as resizing, patching or reconfiguring. A difference means the running infrastructure no longer matches its definition.
     answers:
@@ -164,14 +268,14 @@ sections:
       text: Through automation, but differences are found and fixed by hand
       risk: yellow
       rationale: Differences are found, but correcting them by hand is slow and depends on individuals noticing and acting.
-      mitigation: Add automated detection and reconciliation so that differences are corrected through the delivery workflow.
+      mitigation: Detect differences continuously and route corrective changes through the controlled infrastructure delivery workflow.
       applyTags:
       - category: Answer Key
         tag: 'change and drift: fixed-by-hand'
       - category: Capability Signal
         tag: Infrastructure Lifecycle
     - order: 4
-      text: Through the same automated workflow that built it; differences are detected and corrected
+      text: Through the same controlled workflow that built it; differences are detected and corrective changes are made through that workflow
       risk: green
       applyTags:
       - category: Answer Key
@@ -496,8 +600,6 @@ sections:
         tag: 'service-to-service security: network-location'
       - category: Capability Signal
         tag: Service Networking
-      - category: Adjacent Capability Signal
-        tag: Machine Identity and Secrets
     - order: 2
       text: Firewall rules or address lists updated by ticket or by hand
       risk: yellow
@@ -508,8 +610,6 @@ sections:
         tag: 'service-to-service security: manual-rules'
       - category: Capability Signal
         tag: Service Networking
-      - category: Adjacent Capability Signal
-        tag: Machine Identity and Secrets
     - order: 3
       text: Each environment has its own policy mechanism, managed separately
       risk: yellow

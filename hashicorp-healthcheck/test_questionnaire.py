@@ -22,11 +22,10 @@ CONTEXT, SCORED = QUESTIONS[0], QUESTIONS[1:]
 # DESIGN.md section 4.4, by answer key.
 CROSS_TAGS = {
     "access credentials: shared": {"Machine Identity and Secrets"},
-    "service-to-service security: network-location": {"Machine Identity and Secrets"},
-    "service-to-service security: manual-rules": {"Machine Identity and Secrets"},
 }
+IMAGE_KEYS = {"image build", "image lifecycle"}
 
-PRODUCTS = re.compile(r"terraform|vault|boundary|consul|nomad|hashicorp", re.IGNORECASE)
+PRODUCTS = re.compile(r"terraform|packer|vault|boundary|consul|nomad|hashicorp", re.IGNORECASE)
 
 
 def strings(node):
@@ -193,6 +192,66 @@ class Structure(unittest.TestCase):
         for key, capability in gaps.items():
             self.assertEqual(next(iter(readout.POINTERS[key])), readout.FOLLOW_UP[capability]["product"], key)
 
+    def test_capability_order(self):
+        self.assertEqual(
+            CAPABILITIES,
+            [
+                "Infrastructure Lifecycle",
+                "Image Lifecycle",
+                "Machine Identity and Secrets",
+                "Human Access",
+                "Service Networking",
+                "Workload Lifecycle",
+            ],
+        )
+
+    def test_image_questions_signal_only_on_red_and_yellow(self):
+        questions = [q for q in SCORED if next(iter(tags(q["answers"][0], KEY))).split(": ")[0] in IMAGE_KEYS]
+        self.assertEqual(len(questions), 2)
+        for question in questions:
+            keys = {next(iter(tags(a, KEY))).split(": ")[1] for a in question["answers"]}
+            self.assertIn("not-applicable", keys)
+            for answer in question["answers"]:
+                expected = {"Image Lifecycle"} if answer["risk"] in ("red", "yellow") else set()
+                self.assertEqual(tags(answer, DIRECT), expected, answer["text"])
+                self.assertEqual(tags(answer, ADJACENT), set(), answer["text"])
+
+    def test_not_applicable_images_create_nothing(self):
+        baseline = next(p for p in PERSONAS if p["name"].startswith("D"))["answers"]
+        for index, question in enumerate(QUESTIONS):
+            facet = next(iter(tags(question["answers"][0], KEY))).split(": ")[0]
+            if facet in IMAGE_KEYS:
+                order = next(a["order"] for a in question["answers"] if tags(a, KEY) == {f"{facet}: not-applicable"})
+                baseline = baseline[:index] + [order] + baseline[index + 1 :]
+        result = readout.build(select(baseline), "")
+        self.assertEqual(result["direct"], {})
+        self.assertEqual(result["patterns"], [])
+        self.assertIn("Image Lifecycle", result["in_good_shape"])
+
+    def test_network_answers_carry_no_adjacency(self):
+        for question in SCORED:
+            for answer in question["answers"]:
+                if next(iter(tags(answer, KEY))).startswith("service-to-service security"):
+                    self.assertEqual(tags(answer, ADJACENT), set())
+
+    def test_drift_mitigation_claims_no_automatic_reconciliation(self):
+        answer = next(a for q in SCORED for a in q["answers"] if tags(a, KEY) == {"change and drift: fixed-by-hand"})
+        self.assertEqual(answer["risk"], "yellow")
+        self.assertEqual(tags(answer, DIRECT), {"Infrastructure Lifecycle"})
+        self.assertNotIn("reconcil", answer["mitigation"].lower())
+
+    def test_patterns_do_not_change_direct_signals(self):
+        for persona in PERSONAS:
+            with self.subTest(persona["name"]):
+                with_patterns = readout.build(select(persona["answers"]), "")
+                saved, readout.PATTERNS = readout.PATTERNS, []
+                try:
+                    without = readout.build(select(persona["answers"]), "")
+                finally:
+                    readout.PATTERNS = saved
+                self.assertEqual(with_patterns["direct"], without["direct"])
+                self.assertEqual(with_patterns["areas"], without["areas"])
+
     def test_no_product_names(self):
         # The questionnaire's own name is the one place the company is named.
         for text in strings({k: v for k, v in QUESTIONNAIRE.items() if k != "name"}):
@@ -207,6 +266,18 @@ class Personas(unittest.TestCase):
                 self.assertEqual(len(answers), len(QUESTIONS))
                 expected = {k: v for k, v in persona.items() if k not in ("name", "answers")}
                 self.assertEqual(evaluate(answers), expected)
+
+    def test_certificate_pattern_needs_certificate_evidence(self):
+        baseline = next(p for p in PERSONAS if p["name"].startswith("D"))["answers"]
+        chosen = {"certificates": "by-hand", "service-to-service security": "manual-rules"}
+        for index, question in enumerate(QUESTIONS):
+            facet = next(iter(tags(question["answers"][0], KEY))).split(": ")[0]
+            if facet in chosen:
+                order = next(a["order"] for a in question["answers"] if tags(a, KEY) == {f"{facet}: {chosen[facet]}"})
+                baseline = baseline[:index] + [order] + baseline[index + 1 :]
+        result = readout.build(select(baseline), "")
+        self.assertEqual([p["name"] for p in result["patterns"]], ["Network rules with a manual certificate lifecycle"])
+        self.assertEqual(result["adjacent"], [])
 
     def test_every_pattern_holds_for_some_persona(self):
         expected = {name for persona in PERSONAS for name in persona["patterns"]}
@@ -244,7 +315,7 @@ class Personas(unittest.TestCase):
     def test_presentation_cap(self):
         persona = next(p for p in PERSONAS if p["name"].startswith("A"))
         result = readout.build(select(persona["answers"]), "") | {"generated": "2026-10-02T09:00:00+00:00"}
-        self.assertEqual(len(result["areas"]), 5)
+        self.assertEqual(len(result["areas"]), 6)
         self.assertEqual(len(result["presented"]), 3)
         text = summary.markdown("Example Ltd", result)
         self.assertEqual(text.count("\n## "), 3)

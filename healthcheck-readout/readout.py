@@ -4,7 +4,7 @@ DIRECT = "Capability Signal"
 ADJACENT = "Adjacent Capability Signal"
 # Identifies the interpretation and rendering rules that produced a result. The questionnaire
 # has its own version, carried in the assessment.
-VERSION = "0.4"
+VERSION = "0.5"
 
 # "<facet>: <key>", one per answer. The category is never created in MTA, so the hub keeps
 # the tag in the assessment but off applications.
@@ -16,6 +16,7 @@ QUESTIONNAIRE_VERSION = "Questionnaire Version"
 # Order is the tie-break in DESIGN.md section 4.7.
 CAPABILITIES = [
     "Infrastructure Lifecycle",
+    "Image Lifecycle",
     "Machine Identity and Secrets",
     "Human Access",
     "Service Networking",
@@ -25,8 +26,6 @@ CAPABILITIES = [
 # DESIGN.md section 4.4, by source answer key: why the answer also bears on the adjacent capability.
 ADJACENCY = {
     "access credentials: shared": "Shared credentials need issuing and rotating centrally.",
-    "service-to-service security: network-location": "Identity-based service access requires a managed machine identity lifecycle rather than relying only on network position or addresses.",
-    "service-to-service security: manual-rules": "Identity-based service access requires a managed machine identity lifecycle rather than relying only on network position or addresses.",
 }
 
 # DESIGN.md section 4.8. A pattern holds when every "all" facet has one of its keys
@@ -100,6 +99,27 @@ PATTERNS = [
         "all": {"deployment": {"one-platform"}, "non-standard workloads": {"individual-servers", "separate-platforms"}},
     },
     {
+        "name": "Automated infrastructure, unmanaged image lifecycle",
+        "detail": "Infrastructure delivery is codified, but the machine images consumed by that workflow are not governed to the same standard.",
+        "capabilities": ["Infrastructure Lifecycle", "Image Lifecycle"],
+        "all": {
+            "provisioning": {"fragmented-code", "shared-code"},
+            "image lifecycle": {"unmanaged-versions", "manual-governance"},
+        },
+    },
+    {
+        "name": "Golden-image pipeline disconnected from provisioning",
+        "detail": "Approved image metadata exists, but downstream infrastructure workflows do not consistently validate what they consume.",
+        "capabilities": ["Infrastructure Lifecycle", "Image Lifecycle"],
+        "all": {"provisioning": {"fragmented-code", "shared-code"}, "image lifecycle": {"central-no-validation"}},
+    },
+    {
+        "name": "Manual image maintenance outside automated delivery",
+        "detail": "Provisioning automation does not extend to the machine-image build process, leaving a manual dependency in the delivery chain.",
+        "capabilities": ["Infrastructure Lifecycle", "Image Lifecycle"],
+        "all": {"provisioning": {"fragmented-code", "shared-code"}, "image build": {"manual"}},
+    },
+    {
         "name": "Network-centric controls without internal certificates",
         "detail": "Traffic between services is controlled by network location or hand-maintained rules, and internal services do not commonly use certificates.",
         "capabilities": ["Machine Identity and Secrets", "Service Networking"],
@@ -128,6 +148,17 @@ FOLLOW_UP = {
         "colour": "#7B42BC",
         "talk_track": "Drift detection identifies divergence but does not remediate it automatically. Remediation "
         "returns through a run, once it is decided whether the external change is kept or overwritten.",
+    },
+    "Image Lifecycle": {
+        "topics": "How machine images are built, which versions are approved and how outdated images are retired",
+        "roles": ["Platform engineering lead", "Security engineering lead"],
+        "product": "Packer",
+        "colour": "#02A8EF",
+        "talk_track": "Building an image and governing its lifecycle are separate questions. First establish whether image "
+        "creation is reproducible and version-controlled, then whether published images have a system of record, an "
+        "approved-version mechanism and a revocation path. Packer builds image artefacts, HCP Packer tracks and governs "
+        "their lifecycle, and Terraform can consume and validate those artefacts during provisioning. An organisation "
+        "that does not maintain machine images has no Image Lifecycle gap.",
     },
     "Machine Identity and Secrets": {
         "topics": "Where credentials and certificates come from, how long they live and how they are rotated",
