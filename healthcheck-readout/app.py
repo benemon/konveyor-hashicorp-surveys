@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 
 import readout
 import summary
+from pointers import FEATURES
 
 HUB = os.environ["HUB_BASE_URL"].rstrip("/")
 TOKEN = os.environ["TOKEN"]
@@ -62,10 +63,12 @@ def pointers_markdown(pointers):
     if not pointers:
         return ""
     # MTA renders a description as Markdown, where a single newline does not break a line.
-    lines = ["##### Capability pointers for the facilitator"]
-    for product, capabilities in pointers.items():
+    lines = ["##### Features for the follow-up session"]
+    for product, features in pointers.items():
         lines += ["", f"**{product}**", ""]
-        lines += [f"- **{name}**" + (f": {note}" if note else "") for name, note in capabilities]
+        for name in features:
+            sentence, url = FEATURES[name]
+            lines.append(f"- **{name}.** {sentence} [Documentation]({url})")
     return "\n".join(lines)
 
 
@@ -77,7 +80,7 @@ def insights(result):
                 yield insight(
                     rule,
                     f"{item['facet'].capitalize()}: {item['answer']}",
-                    f"{item['rationale']}\n\n**Direction:** {item['mitigation']}\n\n"
+                    f"{item['rationale']}\n\n**Suggested change:** {item['mitigation']}\n\n"
                     + pointers_markdown(item["pointers"]),
                     "High" if item["risk"] == "red" else "Medium",
                     f"{item['question']} {item['answer']}",
