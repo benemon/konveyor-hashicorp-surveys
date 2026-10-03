@@ -4,7 +4,7 @@ DIRECT = "Capability Signal"
 ADJACENT = "Adjacent Capability Signal"
 # Identifies the interpretation and rendering rules that produced a result. The questionnaire
 # has its own version, carried in the assessment.
-VERSION = "0.6"
+VERSION = "0.7"
 
 # "<facet>: <key>", one per answer. The category is never created in MTA, so the hub keeps
 # the tag in the assessment but off applications.

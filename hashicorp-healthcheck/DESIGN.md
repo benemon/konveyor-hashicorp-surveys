@@ -169,7 +169,7 @@ A spread estate served by one platform is not a pattern: one platform can span e
 
 ### 4.9 Capability pointers
 
-Each red or yellow answer has capability pointers: the capabilities of the associated product, and of a second product where the answer spans two, that a facilitator can discuss if the respondent asks what an improvement would look like. They are held in `healthcheck-readout/pointers.py` by answer key. Each product also has a short talk track.
+Each red or yellow answer has capability pointers: the capabilities of its direct capability's product, and of an adjacent capability's product where the answer carries an adjacent tag, that a facilitator can discuss if the respondent asks what an improvement would look like. A product the answer does not establish has no pointers, however well it integrates with one that does. They are held in `healthcheck-readout/pointers.py` by answer key. Each product also has a short talk track.
 
 A pattern's pointers are those of the answers behind it.
 
@@ -408,11 +408,11 @@ Structure of the questionnaire:
 - Each red or yellow answer applies exactly one `Capability Signal` tag, and all such answers to a question apply the same one. No other answer applies a capability tag.
 - Each scored question has at least one green answer and exactly one unknown answer. Q1 answers are all green.
 - Each capability is the direct tag of at least two questions.
-- Adjacent tags equal the cross-tag table in section 4.4, and each answer with one has capability pointers for the adjacent capability's product.
+- Adjacent tags equal the cross-tag table in section 4.4.
 - Every Q1 answer carries the same questionnaire version, and no other answer carries one.
 - Red and yellow answers have a rationale and a mitigation. Green and unknown answers have neither.
 - Every key a pattern refers to exists.
-- Capability pointers exist for exactly the red and yellow answers, and each lists its capability's own product first.
+- Capability pointers exist for exactly the red and yellow answers, each lists its capability's own product first, and each names exactly the products of the answer's direct and adjacent capabilities.
 - No string in the questionnaire contains Terraform, Vault, Boundary, Consul, Nomad or HashiCorp, apart from the questionnaire's name.
 
 Personas, in `personas.yaml`: ten reference respondents, each with its answers and its expected direct signals, presented areas, adjacent signal, solution adjacency, patterns and overall result.

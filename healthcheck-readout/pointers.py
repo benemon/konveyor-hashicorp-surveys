@@ -237,10 +237,6 @@ POINTERS = {
                 "credentials are issued only when a session is authorised and need not be managed by the user",
             ),
         ],
-        "Vault": [
-            ("Vault-backed credential libraries", ""),
-            ("Dynamic credentials", ""),
-        ],
     },
     "visibility: none": {
         "Boundary": [
