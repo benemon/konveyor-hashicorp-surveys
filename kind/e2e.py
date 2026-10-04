@@ -145,8 +145,8 @@ class Environment(unittest.TestCase):
             with self.subTest(persona["name"]):
                 pdf = console(f"summaries/{application}", raw=True)
                 self.assertTrue(pdf.startswith(b"%PDF-"))
-                # Without a cover file the smallest summary is about 16 KB.
-                self.assertGreater(len(pdf), 10_000)
+                # Without a cover file a summary with no areas is under 10 KB.
+                self.assertGreater(len(pdf), 5_000)
 
     def test_respondents_and_csv_list_every_persona(self):
         listed = {r["organisation"]: r for r in console("respondents")}
