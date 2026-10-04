@@ -99,7 +99,8 @@ def start(organisation, email, questionnaire):
     return {
         "application": application["id"],
         "assessment": assessment["id"],
-        "url": f"/applications/assessment/{assessment['id']}",
+        # The UI opens its assessment wizard from this page; it has no route of its own.
+        "url": f"/applications/assessment-actions/{application['id']}",
     }
 
 

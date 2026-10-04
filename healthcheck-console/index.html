@@ -28,6 +28,9 @@
     .console-form .hds-form-field--layout-vertical { display: flex; flex-direction: column; gap: 4px; }
     .console-toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 16px; }
     .console-toolbar .hds-button-set { gap: 12px; }
+    .console-list-controls { justify-content: space-between; align-items: flex-end; }
+    .console-list-controls .hds-form-field--layout-vertical { display: flex; flex-direction: column; gap: 4px; flex: 0 1 360px; }
+    .console-pager { align-items: center; }
     .console-alert { margin: 16px 0; }
     .console-areas { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 0; padding: 0; list-style: none; }
     .console-area { display: flex; gap: 12px; align-items: center; }
@@ -178,6 +181,23 @@
               <div class="hds-alert hds-alert--type-inline console-alert" id="maintenance-status" hidden>
                 <svg class="hds-alert__icon" aria-hidden="true"><use href="icons.svg#info-24"></use></svg>
                 <div class="hds-alert__content"><div class="hds-alert__text"><div class="hds-alert__title hds-typography-body-200 hds-font-weight-semibold"></div></div></div>
+              </div>
+              <div class="console-toolbar console-list-controls">
+                <div class="hds-form-field--layout-vertical">
+                  <label class="hds-form-field__label hds-form-label" for="respondent-filter">Filter</label>
+                  <div class="hds-form-field__control">
+                    <input class="hds-form-text-input" type="search" id="respondent-filter" placeholder="Organisation or contact">
+                  </div>
+                </div>
+                <div class="hds-button-set console-pager">
+                  <span class="hds-typography-body-200" id="respondent-page"></span>
+                  <button class="hds-button hds-button--size-small hds-button--color-secondary" type="button" id="respondents-previous">
+                    <span class="hds-button__text">Previous</span>
+                  </button>
+                  <button class="hds-button hds-button--size-small hds-button--color-secondary" type="button" id="respondents-next">
+                    <span class="hds-button__text">Next</span>
+                  </button>
+                </div>
               </div>
               <table class="hds-table hds-table--striped hds-table--density-medium hds-table--valign-middle">
                 <thead class="hds-table__thead">
@@ -413,6 +433,13 @@
 
     const respondentRows = document.getElementById("respondents");
     const respondentCount = document.getElementById("respondent-count");
+    const respondentFilter = document.getElementById("respondent-filter");
+    const respondentPage = document.getElementById("respondent-page");
+    const respondentsPrevious = document.getElementById("respondents-previous");
+    const respondentsNext = document.getElementById("respondents-next");
+    const PAGE = 25;
+    let respondents = [];
+    let page = 0;
     const maintenanceStatus = document.getElementById("maintenance-status");
     const generateAll = document.getElementById("generate-all");
     const deleteAllModal = document.getElementById("delete-all-modal");
@@ -426,15 +453,21 @@
       return add(row, "td", text, `hds-table__td ${className || ""}`);
     }
 
-    async function listRespondents() {
-      try {
-        const respondents = await api("respondents");
-        const completed = respondents.filter((r) => r.completed).length;
-        const generated = respondents.filter((r) => r.generated).length;
-        respondentCount.textContent =
-          `${respondents.length} respondents, ${completed} with a completed assessment, ${generated} with a readout.`;
-        respondentRows.replaceChildren();
-        for (const respondent of respondents) {
+    function showRespondents() {
+      const wanted = respondentFilter.value.trim().toLowerCase();
+      const matching = respondents.filter(
+        (r) => !wanted || r.organisation.toLowerCase().includes(wanted) || r.contact.toLowerCase().includes(wanted),
+      );
+      const pages = Math.max(1, Math.ceil(matching.length / PAGE));
+      page = Math.min(page, pages - 1);
+      const shown = matching.slice(page * PAGE, (page + 1) * PAGE);
+      respondentPage.textContent = matching.length
+        ? `${page * PAGE + 1} to ${page * PAGE + shown.length} of ${matching.length}`
+        : "No respondents match";
+      respondentsPrevious.disabled = page === 0;
+      respondentsNext.disabled = page >= pages - 1;
+      respondentRows.replaceChildren();
+      for (const respondent of shown) {
           const row = add(respondentRows, "tr", undefined, "hds-table__tr");
           cell(row, respondent.organisation, "hds-font-weight-medium");
           cell(row, respondent.contact);
@@ -465,12 +498,34 @@
             listRespondents();
             listOrganisations();
           });
-        }
+      }
+    }
+
+    async function listRespondents() {
+      try {
+        respondents = await api("respondents");
+        const completed = respondents.filter((r) => r.completed).length;
+        const generated = respondents.filter((r) => r.generated).length;
+        respondentCount.textContent =
+          `${respondents.length} respondents, ${completed} with a completed assessment, ${generated} with a readout.`;
+        showRespondents();
       } catch (reason) {
         report("critical", reason.message);
       }
     }
 
+    respondentFilter.addEventListener("input", () => {
+      page = 0;
+      showRespondents();
+    });
+    respondentsPrevious.addEventListener("click", () => {
+      page -= 1;
+      showRespondents();
+    });
+    respondentsNext.addEventListener("click", () => {
+      page += 1;
+      showRespondents();
+    });
     document.getElementById("refresh").addEventListener("click", listRespondents);
 
     generateAll.addEventListener("click", async () => {

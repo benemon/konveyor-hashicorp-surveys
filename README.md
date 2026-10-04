@@ -97,10 +97,11 @@ ansible-playbook kind/down.yml
 ## Run an assessment
 
 1. In a browser tab that is logged in to MTA, open `/console/` on MTA's host. Upstream Konveyor on kind needs no login.
-2. On "Start an assessment", enter the organisation and a contact email. The service creates the stakeholder, the application (named for the organisation) and the assessment, and opens the questionnaire. An organisation that already exists reopens its assessment.
-3. Complete the questionnaire.
-4. On "Generate a readout", choose the organisation. The tab reports what was stored: the verdict, each indicated product with its strength, the number of issues and the patterns. It links to the executive summary, a PDF to send to the respondent.
-5. Read the result in MTA on the application: its risk, its Issues and Insights, the facts on its Reports tab and its product tags. The `presented` fact lists the areas to present, in order.
+2. On "Start an assessment", enter the organisation and a contact email. The service creates the stakeholder, the application (named for the organisation) and the assessment, and opens the application's assessment page in MTA. An organisation that already exists reopens its assessment.
+3. Click the questionnaire's button. It reads "Retake" because the assessment already exists with the contact as its stakeholder, which is what lets the wizard's first step pass with "Next".
+4. Complete the questionnaire.
+5. On "Generate a readout", choose the organisation. The tab reports what was stored: the verdict, each indicated product with its strength, the number of issues and the patterns. It links to the executive summary, a PDF to send to the respondent.
+6. Read the result in MTA on the application: its risk, its Issues and Insights, the facts on its Reports tab and its product tags. The `presented` fact lists the areas to present, in order.
 
 ## API
 
