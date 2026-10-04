@@ -37,6 +37,10 @@ QUESTIONNAIRE = yaml.safe_load((HERE.parent / "hashicorp-healthcheck" / "questio
 QUESTIONS = [q for s in QUESTIONNAIRE["sections"] for q in s["questions"]]
 BASELINE = next(p for p in PERSONAS if p["name"].startswith("D"))["answers"]
 PDFTOTEXT = shutil.which("pdftotext")
+
+
+def organisation(persona):
+    return f"{PREFIX}persona {persona['name'][0]}"
 TABLE_HEADER = "Aspect Response What this means Suggested change"
 
 
@@ -101,13 +105,13 @@ def hub(path, method="GET", body=None):
 
 def respond(name, answers):
     """Starts an assessment, answers it and generates its readout; returns the application and the console's state."""
-    started = console("assessments", "POST", {"organisation": PREFIX + name, "email": "e2e@example.com"})
+    started = console("assessments", "POST", {"organisation": name, "email": "e2e@example.com"})
     assessment = hub(f"assessments/{started['assessment']}")
     for question, chosen in zip((q for s in assessment["sections"] for q in s["questions"]), answers):
         for answer in question["answers"]:
             answer["selected"] = answer["order"] == chosen
     hub(f"assessments/{started['assessment']}", "PUT", assessment)
-    task = console("readouts", "POST", {"organisation": PREFIX + name})["task"]
+    task = console("readouts", "POST", {"organisation": name})["task"]
     for _ in range(120):
         state = console(f"readouts/{task}")
         if state["state"] in ("Succeeded", "Failed", "Canceled"):
@@ -237,7 +241,7 @@ def check_summary(test, pdf, organisation, direct, presented, gaps, unknowns, gr
 class Personas(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.results = respond_all({p["name"]: p["answers"] for p in PERSONAS})
+        cls.results = respond_all({organisation(p): p["answers"] for p in PERSONAS})
 
     def test_console_lists_the_questionnaire(self):
         self.assertIn(QUESTIONNAIRE["name"], console("questionnaires"))
@@ -245,7 +249,7 @@ class Personas(unittest.TestCase):
     def test_readout_reports_the_signals_the_answers_establish(self):
         for persona in PERSONAS:
             gaps, _, _ = expected(persona["answers"])
-            application, state = self.results[persona["name"]]
+            application, state = self.results[organisation(persona)]
             with self.subTest(persona["name"]):
                 self.assertEqual(state["state"], "Succeeded", state["errors"])
                 self.assertEqual({a["capability"]: a["strength"] for a in state["areas"]}, persona["direct"])
@@ -260,7 +264,7 @@ class Personas(unittest.TestCase):
     def test_issues_and_insights_are_exactly_the_red_and_yellow_answers(self):
         for persona in PERSONAS:
             gaps, _, greens = expected(persona["answers"])
-            application, _ = self.results[persona["name"]]
+            application, _ = self.results[organisation(persona)]
             issues, insights, _, _ = entries(application)
             with self.subTest(persona["name"]):
                 for found in (issues, insights):
@@ -276,7 +280,7 @@ class Personas(unittest.TestCase):
     def test_pattern_and_adjacent_insights_name_the_answers_behind_them(self):
         for persona in PERSONAS:
             gaps, _, _ = expected(persona["answers"])
-            application, _ = self.results[persona["name"]]
+            application, _ = self.results[organisation(persona)]
             _, _, patterns, adjacent = entries(application)
             with self.subTest(persona["name"]):
                 self.assertEqual(
@@ -299,7 +303,7 @@ class Personas(unittest.TestCase):
     def test_facts_follow_the_answers(self):
         for persona in PERSONAS:
             gaps, unknowns, _ = expected(persona["answers"])
-            application, _ = self.results[persona["name"]]
+            application, _ = self.results[organisation(persona)]
             facts = hub(f"applications/{application}/facts/healthcheck-readout:")
             with self.subTest(persona["name"]):
                 self.assertEqual(facts["readout_version"], readout.VERSION)
@@ -316,12 +320,12 @@ class Personas(unittest.TestCase):
     def test_summary_prints_the_presented_answers_in_order_with_their_next_steps(self):
         for persona in PERSONAS:
             gaps, unknowns, greens = expected(persona["answers"])
-            application, _ = self.results[persona["name"]]
+            application, _ = self.results[organisation(persona)]
             with self.subTest(persona["name"]):
                 check_summary(
                     self,
                     console(f"summaries/{application}", raw=True),
-                    PREFIX + persona["name"],
+                    organisation(persona),
                     persona["direct"],
                     persona["presented"],
                     gaps,
@@ -336,16 +340,16 @@ class Personas(unittest.TestCase):
         exported = {row[0]: row for row in rows[1:]}
         for persona in PERSONAS:
             with self.subTest(persona["name"]):
-                row = listed[PREFIX + persona["name"]]
+                row = listed[organisation(persona)]
                 self.assertTrue(row["completed"])
                 self.assertTrue(row["generated"])
                 self.assertEqual(row["readout_version"], readout.VERSION)
                 self.assertEqual(row["direct"], persona["direct"])
-                self.assertEqual(exported[PREFIX + persona["name"]][1:3], ["e2e@example.com", "yes"])
-        self.assertIn(PREFIX + PERSONAS[0]["name"], console("organisations"))
+                self.assertEqual(exported[organisation(persona)][1:3], ["e2e@example.com", "yes"])
+        self.assertIn(organisation(PERSONAS[0]), console("organisations"))
 
     def test_zz_delete_one_then_optionally_all(self):
-        application, _ = self.results[PERSONAS[0]["name"]]
+        application, _ = self.results[organisation(PERSONAS[0])]
         self.assertEqual(console(f"respondents/{application}", "DELETE"), {"removed": application})
         self.assertNotIn(application, {r["application"] for r in console("respondents")})
         self.assertEqual(hub(f"tasks?filter=application.id=={application}"), [])
@@ -366,7 +370,7 @@ class SingleGaps(unittest.TestCase):
             for answer in question["answers"]:
                 if answer["risk"] in ("red", "yellow"):
                     key = next(iter(tags(answer, readout.KEY)))
-                    cls.cases[f"gap {key}"] = BASELINE[:index] + [answer["order"]] + BASELINE[index + 1 :]
+                    cls.cases[f"{PREFIX}gap {key}"] = BASELINE[:index] + [answer["order"]] + BASELINE[index + 1 :]
         cls.results = respond_all(cls.cases)
 
     @classmethod
@@ -402,7 +406,7 @@ class SingleGaps(unittest.TestCase):
                 check_summary(
                     self,
                     console(f"summaries/{application}", raw=True),
-                    PREFIX + name,
+                    name,
                     {gap["capability"]: "strong" if gap["risk"] == "red" else "moderate"},
                     [gap["capability"]],
                     [gap],
