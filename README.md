@@ -155,7 +155,7 @@ cd hashicorp-healthcheck && python3 -m unittest
 
 The tests check the questionnaire's structure against the design, run the reference respondents in `personas.yaml` through the addon's readout logic, and check that `DESIGN.md` matches its generator. They do not need an MTA instance. They need Python 3 with PyYAML (`pip install pyyaml`).
 
-An end-to-end check runs against a live environment. It creates a respondent per persona through Healthcheck Console, answers it through the hub, generates the readout, and checks that what lands in the facts, the Issues and Insights, the summary PDF, the respondents list and deletion follows from the answers chosen: every red or yellow answer with its rationale, suggested change and features, every unknown question, and no green answer. The summary's text is checked when `pdftotext` (poppler) is installed:
+An end-to-end check runs against a live environment. It creates a respondent per persona, and one per red or yellow answer on an all-green baseline, through Healthcheck Console; answers each through the hub; generates the readout; and checks that what lands in the facts, the Issues and Insights, the summary PDF, the respondents list and deletion follows from the answers chosen: every red or yellow answer with its rationale, suggested change and features, under its own area and in presentation order, with each feature's footnote resolving to its documentation page; every unknown question; and no green answer. The summary's text is checked when `pdftotext` (poppler) is installed:
 
 ```sh
 BASE=https://localhost:8443 python3 kind/e2e.py
