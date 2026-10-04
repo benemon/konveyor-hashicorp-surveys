@@ -13,7 +13,6 @@ ICONS = [
     "consul-color-24",
     "nomad-color-24",
     "check-circle-fill-24",
-    "alert-triangle-fill-24",
     "alert-diamond-fill-24",
     "info-24",
     "loading-24",

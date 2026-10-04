@@ -40,7 +40,7 @@ def call(path, body=None, method=None):
     request = urllib.request.Request(
         f"{MTA_HUB}/{path}",
         method=method,
-        data=json.dumps(body).encode() if body else None,
+        data=json.dumps(body).encode() if body is not None else None,
         headers={
             "Authorization": f"Bearer {API_KEY.read_text()}",
             "Content-Type": "application/json",
@@ -179,10 +179,15 @@ def remove(application):
 
 
 def clear():
-    removed = [remove(a["id"])["removed"] for a in hub("applications")]
+    applications = hub("applications")
+    for task in hub("tasks"):
+        if task.get("application"):
+            call(f"tasks/{task['id']}", method="DELETE")
+    for application in applications:
+        call(f"applications/{application['id']}", method="DELETE")
     for stakeholder in hub("stakeholders"):
         call(f"stakeholders/{stakeholder['id']}", method="DELETE")
-    return {"removed": len(removed)}
+    return {"removed": len(applications)}
 
 
 def readout_state(task):

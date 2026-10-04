@@ -10,6 +10,7 @@ import yaml
 HERE = Path(__file__).parent
 # The addon's logic is the single implementation of the signal model.
 sys.path.insert(0, str(HERE.parent / "healthcheck-readout"))
+import gen_design  # noqa: E402
 import pointers  # noqa: E402
 import readout  # noqa: E402
 import summary  # noqa: E402
@@ -19,6 +20,7 @@ QUESTIONNAIRE = yaml.safe_load((HERE / "questionnaire.yaml").read_text())
 PERSONAS = yaml.safe_load((HERE / "personas.yaml").read_text())
 QUESTIONS = [q for s in QUESTIONNAIRE["sections"] for q in s["questions"]]
 CONTEXT, SCORED = QUESTIONS[0], QUESTIONS[1:]
+FACETS = [next(iter(tags(q["answers"][0], KEY))).split(": ")[0] for q in QUESTIONS]
 
 # DESIGN.md section 4.4, by answer key.
 CROSS_TAGS = {
@@ -27,6 +29,15 @@ CROSS_TAGS = {
 IMAGE_KEYS = {"image build", "image lifecycle", "image composition"}
 
 PRODUCTS = re.compile(r"terraform|packer|vault|boundary|consul|nomad|hashicorp", re.IGNORECASE)
+
+
+def choose(answers, chosen):
+    """Returns the answers with each facet in chosen replaced by the answer with that key."""
+    answers = list(answers)
+    for facet, key in chosen.items():
+        index = FACETS.index(facet)
+        answers[index] = next(a["order"] for a in QUESTIONS[index]["answers"] if tags(a, KEY) == {f"{facet}: {key}"})
+    return answers
 
 
 def strings(node):
@@ -101,7 +112,8 @@ class Structure(unittest.TestCase):
                 self.assertFalse(tags(answer, QUESTIONNAIRE_VERSION))
 
     def test_question_and_answer_counts(self):
-        self.assertTrue(14 <= len(QUESTIONS) <= 18, len(QUESTIONS))
+        # The summary and the design say eighteen.
+        self.assertEqual(len(QUESTIONS), 18)
         for question in QUESTIONS:
             self.assertTrue(4 <= len(question["answers"]) <= 6, question["text"])
 
@@ -186,9 +198,9 @@ class Structure(unittest.TestCase):
             for a in q["answers"]
             if a["risk"] in ("red", "yellow")
         }
-        self.assertEqual(set(readout.POINTERS), set(gaps))
+        self.assertEqual(set(pointers.POINTERS), set(gaps))
         for key, capability in gaps.items():
-            self.assertEqual(next(iter(readout.POINTERS[key])), readout.FOLLOW_UP[capability]["product"], key)
+            self.assertEqual(next(iter(pointers.POINTERS[key])), FOLLOW_UP[capability]["product"], key)
 
     def test_pointers_name_only_the_products_an_answer_establishes(self):
         for question in SCORED:
@@ -197,14 +209,17 @@ class Structure(unittest.TestCase):
                     continue
                 key = next(iter(tags(answer, KEY)))
                 established = {FOLLOW_UP[c]["product"] for c in tags(answer, DIRECT) | tags(answer, ADJACENT)}
-                self.assertEqual(set(readout.POINTERS[key]), established, key)
+                self.assertEqual(set(pointers.POINTERS[key]), established, key)
 
     def test_pointers_name_catalogued_features_with_hashicorp_documentation(self):
-        named = {f for products in readout.POINTERS.values() for features in products.values() for f in features}
+        named = {f for products in pointers.POINTERS.values() for features in products.values() for f in features}
         self.assertEqual(named, set(pointers.FEATURES))
         for name, (sentence, url) in pointers.FEATURES.items():
             self.assertTrue(url.startswith("https://developer.hashicorp.com/"), name)
             self.assertRegex(sentence, r"^[A-Za-z].*\.$", name)
+
+    def test_design_document_is_generated(self):
+        self.assertEqual((HERE / "DESIGN.md").read_text(), gen_design.render())
 
     def test_capability_order(self):
         self.assertEqual(
@@ -220,7 +235,7 @@ class Structure(unittest.TestCase):
         )
 
     def test_image_questions_signal_only_on_red_and_yellow(self):
-        questions = [q for q in SCORED if next(iter(tags(q["answers"][0], KEY))).split(": ")[0] in IMAGE_KEYS]
+        questions = [q for q, facet in zip(QUESTIONS, FACETS) if facet in IMAGE_KEYS]
         self.assertEqual(len(questions), 3)
         for question in questions:
             keys = {next(iter(tags(a, KEY))).split(": ")[1] for a in question["answers"]}
@@ -232,12 +247,7 @@ class Structure(unittest.TestCase):
 
     def test_not_applicable_images_create_nothing(self):
         baseline = next(p for p in PERSONAS if p["name"].startswith("D"))["answers"]
-        for index, question in enumerate(QUESTIONS):
-            facet = next(iter(tags(question["answers"][0], KEY))).split(": ")[0]
-            if facet in IMAGE_KEYS:
-                order = next(a["order"] for a in question["answers"] if tags(a, KEY) == {f"{facet}: not-applicable"})
-                baseline = baseline[:index] + [order] + baseline[index + 1 :]
-        result = readout.build(select(baseline), "")
+        result = readout.build(select(choose(baseline, {facet: "not-applicable" for facet in IMAGE_KEYS})), "")
         self.assertEqual(result["direct"], {})
         self.assertEqual(result["patterns"], [])
         self.assertIn("Image Lifecycle", result["in_good_shape"])
@@ -284,44 +294,35 @@ class Personas(unittest.TestCase):
     def test_certificate_pattern_needs_certificate_evidence(self):
         baseline = next(p for p in PERSONAS if p["name"].startswith("D"))["answers"]
         chosen = {"certificates": "by-hand", "service-to-service security": "manual-rules"}
-        for index, question in enumerate(QUESTIONS):
-            facet = next(iter(tags(question["answers"][0], KEY))).split(": ")[0]
-            if facet in chosen:
-                order = next(a["order"] for a in question["answers"] if tags(a, KEY) == {f"{facet}: {chosen[facet]}"})
-                baseline = baseline[:index] + [order] + baseline[index + 1 :]
-        result = readout.build(select(baseline), "")
+        result = readout.build(select(choose(baseline, chosen)), "")
         self.assertEqual([p["name"] for p in result["patterns"]], ["Network rules with a manual certificate lifecycle"])
         self.assertEqual(result["adjacent"], [])
 
     def test_pattern_capabilities_come_from_matched_answers(self):
         for persona in PERSONAS:
-            chosen = {
-                next(iter(tags(q["answers"][n - 1], KEY))).split(": ")[0]: q["answers"][n - 1]
-                for q, n in zip(QUESTIONS, persona["answers"])
-            }
+            chosen = {facet: q["answers"][n - 1] for facet, q, n in zip(FACETS, QUESTIONS, persona["answers"])}
             for pattern in readout.build(select(persona["answers"]), "")["patterns"]:
                 with self.subTest(persona["name"], pattern=pattern["name"]):
                     matched = [chosen[a["facet"]] for a in pattern["answers"]]
                     expected = set().union(*(tags(a, DIRECT) | tags(a, ADJACENT) for a in matched))
                     self.assertEqual(set(pattern["capabilities"]), expected)
-                    self.assertEqual(pattern["products"], [readout.FOLLOW_UP[c]["product"] for c in pattern["capabilities"]])
+                    self.assertEqual(pattern["products"], [FOLLOW_UP[c]["product"] for c in pattern["capabilities"]])
                     for answer in matched:
                         if answer["risk"] not in ("red", "yellow"):
                             self.assertFalse(tags(answer, DIRECT) | tags(answer, ADJACENT), answer["text"])
 
     def test_networking_evidence_never_surfaces_vault(self):
         baseline = next(p for p in PERSONAS if p["name"].startswith("D"))["answers"]
-        facets = {next(iter(tags(q["answers"][0], KEY))).split(": ")[0]: i for i, q in enumerate(QUESTIONS)}
-        networking = QUESTIONS[facets["service-to-service security"]]
-        certificates = QUESTIONS[facets["certificates"]]
+        networking = QUESTIONS[FACETS.index("service-to-service security")]
+        certificates = QUESTIONS[FACETS.index("certificates")]
         not_used = next(a["order"] for a in certificates["answers"] if tags(a, KEY) == {"certificates: not-used"})
         for answer in networking["answers"]:
             if answer["risk"] not in ("red", "yellow"):
                 continue
-            for cert in (baseline[facets["certificates"]], not_used):
+            for cert in (baseline[FACETS.index("certificates")], not_used):
                 answers = list(baseline)
-                answers[facets["service-to-service security"]] = answer["order"]
-                answers[facets["certificates"]] = cert
+                answers[FACETS.index("service-to-service security")] = answer["order"]
+                answers[FACETS.index("certificates")] = cert
                 result = readout.build(select(answers), "")
                 with self.subTest(answer["text"], certificates=cert):
                     self.assertEqual(result["direct"], {"Service Networking": "strong" if answer["risk"] == "red" else "moderate"})

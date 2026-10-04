@@ -4,7 +4,7 @@ DIRECT = "Capability Signal"
 ADJACENT = "Adjacent Capability Signal"
 # Identifies the interpretation and rendering rules that produced a result. The questionnaire
 # has its own version, carried in the assessment.
-VERSION = "0.10"
+VERSION = "0.11"
 
 # "<facet>: <key>", one per answer. The category is never created in MTA, so the hub keeps
 # the tag in the assessment but off applications.
@@ -226,9 +226,11 @@ def build(sections, verdict):
         if not all(len(identity) == 1 for identity in identities):
             raise ValueError("the assessment's questionnaire has no answer keys; assess again with the current one")
         facet = next(iter(identities[0])).split(": ")[0]
-        answer = next((a for a in question["answers"] if a.get("selected")), None)
+        answer, identity = next(
+            ((a, i) for a, i in zip(question["answers"], identities) if a.get("selected")), (None, None)
+        )
         if answer:
-            key = next(iter(tags(answer, KEY)))
+            key = next(iter(identity))
             keys[facet] = key.split(": ")[1]
             texts[facet] = answer["text"]
         capability = next(iter(set().union(*(tags(a, DIRECT) for a in question["answers"]))), None)
@@ -236,7 +238,7 @@ def build(sections, verdict):
             environment = answer["text"] if answer else ""
             questionnaire_version = next(iter(tags(question["answers"][0], QUESTIONNAIRE_VERSION)), "")
         elif not answer or answer["risk"] == "unknown":
-            unknowns.append({"facet": facet, "question": question["text"]})
+            unknowns.append({"question": question["text"]})
             unclear.add(capability)
         elif answer["risk"] in ("red", "yellow"):
             evidence[capability].append(
@@ -251,8 +253,9 @@ def build(sections, verdict):
                     "pointers": POINTERS.get(key, {}),
                 }
             )
-            signals[facet] = {capability} | tags(answer, ADJACENT)
-            for adjacent in tags(answer, ADJACENT):
+            adjacents = tags(answer, ADJACENT)
+            signals[facet] = {capability} | adjacents
+            for adjacent in adjacents:
                 sources.setdefault(adjacent, []).append(
                     {"capability": capability, "facet": facet, "answer": answer["text"], "note": ADJACENCY[key]}
                 )

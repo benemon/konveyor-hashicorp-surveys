@@ -30,7 +30,7 @@ rules:
     resources: [secrets]
     resourceNames: [healthcheck-console]
     verbs: [get, patch]
-  {{- if include "hashicorp-healthcheck.openshift" . }}
+  {{- if include "hashicorp-healthcheck.builds" . }}
   - apiGroups: [build.openshift.io]
     resources: [buildconfigs/instantiate]
     verbs: [create]
@@ -55,7 +55,6 @@ metadata:
   annotations:
     # The job starts the builds, so it runs after the release's build definitions are applied.
     helm.sh/hook: post-install,post-upgrade
-    helm.sh/hook-delete-policy: before-hook-creation
 spec:
   backoffLimit: 3
   template:
@@ -65,11 +64,10 @@ spec:
       containers:
         - name: setup
           image: {{ .Values.pythonImage }}
-          imagePullPolicy: IfNotPresent
           command: [python, /setup/setup.py]
           env:
             - name: BUILDS
-              value: {{ if include "hashicorp-healthcheck.openshift" . }}healthcheck-console healthcheck-readout{{ else }}""{{ end }}
+              value: {{ if include "hashicorp-healthcheck.builds" . }}healthcheck-console healthcheck-readout{{ else }}""{{ end }}
             - name: MTA_HUB
               value: http://{{ .Values.appName }}-hub:8080
             - name: NAMESPACE
