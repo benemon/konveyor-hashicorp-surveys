@@ -188,6 +188,8 @@
           type: Complete
         wait_timeout: 900
 
+    # Available is true while the previous pod still serves; the rollout is over when the new
+    # replica set is the available one.
     - name: Wait for Healthcheck Console
       kubernetes.core.k8s_info:
         kind: Deployment
@@ -195,7 +197,8 @@
         name: healthcheck-console
         wait: true
         wait_condition:
-          type: Available
+          type: Progressing
+          reason: NewReplicaSetAvailable
         wait_timeout: 300
 
     # The API key reaches the pod's mounted secret a short while after the setup job stores it.

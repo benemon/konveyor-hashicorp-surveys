@@ -59,6 +59,19 @@ def questionnaires():
     return [q for q in hub("questionnaires") if not q.get("builtin")]
 
 
+def find_or_create(path, match, body):
+    found = next((item for item in hub(path) if match(item)), None)
+    if found:
+        return found
+    try:
+        return hub(path, body)
+    except urllib.error.HTTPError as reason:
+        # A second start for the same respondent created it between the lookup and the create.
+        if reason.code != 409:
+            raise
+        return next(item for item in hub(path) if match(item))
+
+
 def start(organisation, email, questionnaire):
     available = questionnaires()
     if questionnaire:
@@ -68,12 +81,10 @@ def start(organisation, email, questionnaire):
     chosen = available[0]["id"]
 
     # The MTA wizard will not advance past its first step without a stakeholder.
-    stakeholder = next(
-        (s for s in hub("stakeholders") if s["email"] == email), None
-    ) or hub("stakeholders", {"name": email, "email": email})
-    application = next(
-        (a for a in hub("applications") if a["name"] == organisation), None
-    ) or hub("applications", {"name": organisation, "owner": {"id": stakeholder["id"]}})
+    stakeholder = find_or_create("stakeholders", lambda s: s["email"] == email, {"name": email, "email": email})
+    application = find_or_create(
+        "applications", lambda a: a["name"] == organisation, {"name": organisation, "owner": {"id": stakeholder["id"]}}
+    )
     path = f"applications/{application['id']}/assessments"
     # The list also returns assessments inherited from archetypes.
     assessment = next(
