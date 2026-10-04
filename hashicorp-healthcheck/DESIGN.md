@@ -480,6 +480,7 @@ Personas, in `personas.yaml`: ten reference respondents, each with its answers a
 The repository root is a Helm chart, so that the chart can package the sources below.
 
 ```text
+.github/workflows/e2e.yml
 README.md
 Chart.yaml
 values.yaml
@@ -508,10 +509,11 @@ kind/
 ├── cluster.yaml
 ├── requirements.yml
 ├── up.yml
-└── down.yml
+├── down.yml
+└── e2e.py
 ```
 
-On OpenShift the chart builds the two images on the cluster from their Containerfiles. Elsewhere they are built locally; `kind/` holds the playbooks that do so for a kind cluster.
+On OpenShift the chart builds the two images on the cluster from their Containerfiles. Elsewhere they are built locally; `kind/` holds the playbooks that do so for a kind cluster, and `kind/e2e.py`, which checks a live environment persona by persona. The workflow in `.github/workflows/` runs the tests, lints the chart and runs that check on a kind cluster.
 
 `setup.py` runs as the chart's setup job: on OpenShift it starts the image builds, and everywhere it mints the service's API key, seeds the signal tag categories and imports the questionnaire.
 

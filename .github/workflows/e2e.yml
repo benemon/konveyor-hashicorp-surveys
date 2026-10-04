@@ -1,0 +1,45 @@
+name: Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  unit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get install -y python3-yaml
+      - run: python3 -m unittest
+        working-directory: hashicorp-healthcheck
+      - run: helm lint .
+      - name: Markdown register
+        run: |
+          ! grep -rnE --include='*.md' '—|\b(deliberate|honest|careful|sensible|properly)\b' .
+
+  e2e:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get install -y python3-yaml python3-kubernetes
+      # kind drives rootful Podman, so the playbook and its collections run as root.
+      - run: sudo ansible-galaxy collection install -r kind/requirements.yml
+      - name: Stand up the environment
+        run: sudo env "PATH=$PATH" ansible-playbook kind/up.yml
+      - name: Run the end-to-end check
+        run: python3 kind/e2e.py
+        env:
+          BASE: https://localhost:8443
+          E2E_CLEAR: "1"
+      - name: Diagnostics
+        if: failure()
+        run: |
+          export KUBECONFIG=kind/kubeconfig
+          sudo -E kubectl get pods -A
+          sudo -E kubectl -n konveyor-tackle describe pods
+          sudo -E kubectl -n konveyor-tackle logs job/hashicorp-healthcheck-setup --tail=200 || true
+          sudo -E kubectl -n konveyor-tackle logs deploy/healthcheck-console --tail=200 || true
+          sudo -E kubectl -n konveyor-tackle logs deploy/tackle-hub --tail=200 || true
