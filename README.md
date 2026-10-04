@@ -24,6 +24,7 @@ Prerequisites:
 
 - An OpenShift cluster with the MTA or Konveyor operator installed in the target namespace, and no instance in it.
 - `oc` and `helm`, logged in with rights to create the resources in `templates/` in that namespace.
+- An A4 cover for the summary's title page at `healthcheck-readout/cover.pdf`, at most 500 KB because the chart ships it in a ConfigMap. The file is not tracked. Without it the title page is plain.
 
 Steps:
 
@@ -39,11 +40,13 @@ Steps:
    oc -n openshift-mta get jobs,builds
    ```
 
-   The setup job waits for the hub, starts the builds, mints the service's API key, seeds the tag categories and imports the questionnaire.
+   The setup job starts the builds, waits for the hub, mints the service's API key, seeds the tag categories and imports the questionnaire.
 
 3. Open the Healthcheck Console address that the install notes print.
 
 `helm upgrade` runs the setup job again, which rebuilds the images and updates the questionnaire.
+
+### Values
 
 | Value | Default | Purpose |
 |---|---|---|
@@ -56,20 +59,19 @@ Steps:
 
 Healthcheck Console has no login of its own and acts on MTA with its API key. Anyone who can reach MTA's host can list respondents and their contact emails, start assessments, generate readouts, download summaries and delete respondents. Expose it only on a trusted network.
 
-The summary's title page uses `healthcheck-readout/cover.pdf` as its background. The file is not tracked. Put an A4 cover of at most 500 KB there before installing the chart or running the playbook. Without it the title page is plain.
 
 ## Run locally on kind
 
 Two Ansible playbooks stand the whole environment up on a laptop, with upstream Konveyor, and remove it again. Once it is up it needs no network connection.
 
-Prerequisites: `podman` with a machine of at least 6 GB of memory, `kind`, `helm`, `git` and `ansible` with the collections in `kind/requirements.yml`.
+Prerequisites: `podman` with a machine of at least 6 GB of memory, `kind`, `helm`, `git`, `ansible` with the collections in `kind/requirements.yml`, and the cover file described above.
 
 ```sh
 ansible-galaxy collection install -r kind/requirements.yml
 ansible-playbook kind/up.yml
 ```
 
-The playbook creates a kind cluster, installs an ingress controller and the Konveyor operator, builds the two images from their Containerfiles and loads them into the cluster, installs this chart and waits until Healthcheck Console can reach Konveyor. It ends by listing each address with the ingress and service behind it, and the in-cluster service names. On a cluster without OpenShift builds the chart uses those images and an Ingress in place of the builds and the Route.
+The playbook creates a kind cluster, installs an ingress controller and the Konveyor operator, builds the two images from their Containerfiles and loads them into the cluster, installs this chart and waits until Healthcheck Console can reach Konveyor. It ends by printing the two addresses below. On a cluster without OpenShift builds the chart uses those images and an Ingress in place of the builds and the Route.
 
 - Konveyor: `https://localhost:8443/`
 - Healthcheck Console: `https://localhost:8443/console/`
@@ -151,7 +153,7 @@ Deleting leaves the questionnaire and the tags in place. Neither delete can be u
 cd hashicorp-healthcheck && python3 -m unittest
 ```
 
-The tests check the questionnaire's structure against the design and run the reference respondents in `personas.yaml` through the addon's readout logic. They do not need an MTA instance. They need Python 3 with PyYAML (`pip install pyyaml`).
+The tests check the questionnaire's structure against the design, run the reference respondents in `personas.yaml` through the addon's readout logic, and check that `DESIGN.md` matches its generator. They do not need an MTA instance. They need Python 3 with PyYAML (`pip install pyyaml`).
 
 ## Links
 

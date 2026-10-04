@@ -1,6 +1,6 @@
-{{- $openshift := include "hashicorp-healthcheck.openshift" . }}
+{{- $builds := include "hashicorp-healthcheck.builds" . }}
 {{- $image := .Values.images.console }}
-{{- if $openshift }}
+{{- if $builds }}
 {{- $image = printf "%s/healthcheck-console:latest" (include "hashicorp-healthcheck.registry" .) }}
 {{- with lookup "apps/v1" "Deployment" .Release.Namespace "healthcheck-console" }}
 {{- $image = (index .spec.template.spec.containers 0).image }}
@@ -16,7 +16,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: healthcheck-console
-  {{- if $openshift }}
+  {{- if $builds }}
   annotations:
     image.openshift.io/triggers: >-
       [{"from":{"kind":"ImageStreamTag","name":"healthcheck-console:latest"},
@@ -66,7 +66,7 @@ spec:
     - port: 8080
 ---
 # Served on the UI's own host, so that the page shares the browser tab's session.
-{{- if $openshift }}
+{{- if include "hashicorp-healthcheck.openshift" . }}
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:

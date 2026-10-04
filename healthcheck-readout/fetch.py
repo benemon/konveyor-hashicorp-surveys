@@ -8,6 +8,7 @@ import zipfile
 from pathlib import Path
 
 import summary
+from readout import FOLLOW_UP
 
 PANDOC = "3.12"
 TECTONIC = "0.17.0"
@@ -56,7 +57,7 @@ from reportlab.graphics import renderPDF  # noqa: E402
 from svglib.svglib import svg2rlg  # noqa: E402
 
 summary.LOGOS.mkdir(parents=True)
-for product in summary.FOLLOW_UP_PRODUCTS:
+for product in sorted({f["product"] for f in FOLLOW_UP.values()}):
     svg = get(f"https://unpkg.com/@hashicorp/flight-icons/svg/{product.lower()}-color-24.svg")
     renderPDF.drawToFile(svg2rlg(svg), str(summary.LOGOS / f"{product}.pdf"))
 

@@ -2,6 +2,10 @@
 {{- if .Capabilities.APIVersions.Has "route.openshift.io/v1" }}true{{ end -}}
 {{- end -}}
 
+{{- define "hashicorp-healthcheck.builds" -}}
+{{- if .Capabilities.APIVersions.Has "build.openshift.io/v1" }}true{{ end -}}
+{{- end -}}
+
 {{- define "hashicorp-healthcheck.registry" -}}
 image-registry.openshift-image-registry.svc:5000/{{ .Release.Namespace }}
 {{- end -}}

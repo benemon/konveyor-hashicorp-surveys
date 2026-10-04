@@ -208,45 +208,9 @@
       retries: 30
       delay: 5
 
-    - name: Read the ingresses
-      kubernetes.core.k8s_info:
-        kind: Ingress
-        namespace: "{{ namespace }}"
-      register: ingresses
-
-    - name: Read the services
-      kubernetes.core.k8s_info:
-        kind: Service
-        namespace: "{{ namespace }}"
-      register: services
-
     # cluster.yaml maps host port 8443 to the ingress controller's port 443.
     - name: Show the endpoints
       ansible.builtin.debug:
         msg:
-          from_this_machine: "{{ external }}"
-          inside_the_cluster: "{{ internal }}"
-      vars:
-        external: >-
-          {%- set found = [] -%}
-          {%- for ingress in ingresses.resources -%}
-          {%- for rule in ingress.spec.rules -%}
-          {%- for path in rule.http.paths -%}
-          {%- set _ = found.append(
-            'https://' ~ (rule.host | default('localhost')) ~ ':8443' ~ path.path
-            ~ ' -> ingress ' ~ ingress.metadata.name
-            ~ ' (class ' ~ ingress.spec.ingressClassName ~ ', host ' ~ (rule.host | default('any')) ~ ')'
-            ~ ' -> service ' ~ path.backend.service.name ~ ':' ~ path.backend.service.port.number) -%}
-          {%- endfor -%}
-          {%- endfor -%}
-          {%- endfor -%}
-          {{ found }}
-        internal: >-
-          {%- set found = [] -%}
-          {%- for service in services.resources -%}
-          {%- for port in service.spec.ports -%}
-          {%- set _ = found.append(
-            service.metadata.name ~ '.' ~ namespace ~ '.svc.cluster.local:' ~ port.port) -%}
-          {%- endfor -%}
-          {%- endfor -%}
-          {{ found }}
+          - "Konveyor: https://localhost:8443/"
+          - "Healthcheck Console: https://localhost:8443/console/"

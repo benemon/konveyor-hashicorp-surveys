@@ -42,7 +42,6 @@ FILE = "healthcheck-summary.pdf"
 TEMPLATE = "/opt/eisvogel.latex"
 # Product marks as PDF, made by the image build. The summary shows a product's mark beside its next step.
 LOGOS = Path("/opt/logos")
-FOLLOW_UP_PRODUCTS = sorted({f["product"] for f in FOLLOW_UP.values()})
 
 # Pandoc sizes the columns of a pipe table from the dashes when a row is wider than the page.
 AREA_COLUMNS = "|--------|----------|--------------|--------------|"

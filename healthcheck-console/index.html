@@ -231,14 +231,17 @@
   </div>
   <script>
     const form = document.getElementById("start");
+    const startOrganisation = document.getElementById("organisation");
+    const startEmail = document.getElementById("email");
     const questionnaire = document.getElementById("questionnaire");
     const error = document.getElementById("error");
     const readout = document.getElementById("readout");
+    const readoutButton = readout.querySelector("button");
     const readoutOrganisation = document.getElementById("readout-organisation");
     const readoutStatus = document.getElementById("readout-status");
     const readoutResult = document.getElementById("readout-result");
 
-    const ICONS = { success: "check-circle-fill-24", warning: "alert-triangle-fill-24", critical: "alert-diamond-fill-24", neutral: "info-24", highlight: "loading-24" };
+    const ICONS = { success: "check-circle-fill-24", critical: "alert-diamond-fill-24", neutral: "info-24", highlight: "loading-24" };
     const PRODUCT_ICONS = { Terraform: "terraform-color-24", Packer: "packer-color-24", Vault: "vault-color-24", Boundary: "boundary-color-24", Consul: "consul-color-24", Nomad: "nomad-color-24" };
 
     function icon(name, className) {
@@ -378,8 +381,8 @@
       error.hidden = true;
       try {
         const started = await api("assessments", {
-          organisation: document.getElementById("organisation").value,
-          email: document.getElementById("email").value,
+          organisation: startOrganisation.value,
+          email: startEmail.value,
           questionnaire: questionnaire.value,
         });
         location.assign(started.url);
@@ -390,9 +393,8 @@
 
     readout.addEventListener("submit", async (event) => {
       event.preventDefault();
-      const button = readout.querySelector("button");
       const organisation = readoutOrganisation.value;
-      button.disabled = true;
+      readoutButton.disabled = true;
       try {
         const { task } = await api("readouts", { organisation });
         show("highlight", `Readout task ${task} is running`);
@@ -405,11 +407,12 @@
       } catch (reason) {
         show("critical", reason.message);
       } finally {
-        button.disabled = false;
+        readoutButton.disabled = false;
       }
     });
 
     const respondentRows = document.getElementById("respondents");
+    const respondentCount = document.getElementById("respondent-count");
     const maintenanceStatus = document.getElementById("maintenance-status");
     const generateAll = document.getElementById("generate-all");
     const deleteAllModal = document.getElementById("delete-all-modal");
@@ -428,7 +431,7 @@
         const respondents = await api("respondents");
         const completed = respondents.filter((r) => r.completed).length;
         const generated = respondents.filter((r) => r.generated).length;
-        document.getElementById("respondent-count").textContent =
+        respondentCount.textContent =
           `${respondents.length} respondents, ${completed} with a completed assessment, ${generated} with a readout.`;
         respondentRows.replaceChildren();
         for (const respondent of respondents) {
@@ -449,7 +452,6 @@
           const label = add(remove, "span", "Delete", "hds-button__text");
           remove.type = "button";
           remove.addEventListener("click", async () => {
-            // The first click arms the button and the second deletes.
             if (label.textContent === "Delete") {
               label.textContent = "Confirm delete";
               return;

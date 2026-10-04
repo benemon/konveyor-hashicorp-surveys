@@ -5,7 +5,7 @@ metadata:
 spec:
   container:
     name: addon
-    {{- if include "hashicorp-healthcheck.openshift" . }}
+    {{- if include "hashicorp-healthcheck.builds" . }}
     image: {{ include "hashicorp-healthcheck.registry" . }}/healthcheck-readout:latest
     # The hub defaults this to IfNotPresent, which would keep running a stale :latest image.
     imagePullPolicy: Always

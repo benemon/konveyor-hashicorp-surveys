@@ -1,4 +1,4 @@
-{{- if .Capabilities.APIVersions.Has "build.openshift.io/v1" }}
+{{- if include "hashicorp-healthcheck.builds" . }}
 {{- range $name := list "healthcheck-console" "healthcheck-readout" }}
 ---
 apiVersion: v1
