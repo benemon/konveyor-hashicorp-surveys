@@ -41,6 +41,7 @@ Verified on Migration Toolkit for Applications (MTA) 8.3.0, the Red Hat build of
 - An addon's task token cannot read assessments ([addon guide](https://github.com/konveyor/tackle2-hub/blob/main/docs/addon-guide.md)).
 - The hub mints an API key for a login presented with basic authentication. Upstream Konveyor does not require authentication by default, and then ignores the key.
 - The UI keeps its login per browser tab and per host.
+- The UI opens its assessment wizard as a modal from the application's assessment-actions page; the assessment route in its path table is not mounted. The wizard's button reads "Take" when no assessment exists and "Retake" otherwise, and a wizard opened by "Take" starts with no stakeholder, while one opened on an existing assessment carries that assessment's stakeholders.
 
 ## 4. Signal model
 

@@ -106,6 +106,7 @@ def hub(path, method="GET", body=None):
 def respond(name, answers):
     """Starts an assessment, answers it and generates its readout; returns the application and the console's state."""
     started = console("assessments", "POST", {"organisation": name, "email": "e2e@example.com"})
+    assert started["url"] == f"/applications/assessment-actions/{started['application']}", started
     assessment = hub(f"assessments/{started['assessment']}")
     for question, chosen in zip((q for s in assessment["sections"] for q in s["questions"]), answers):
         for answer in question["answers"]:
