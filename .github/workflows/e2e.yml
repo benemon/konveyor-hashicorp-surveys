@@ -24,7 +24,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-      - run: sudo apt-get install -y python3-yaml python3-kubernetes
+      - run: sudo apt-get install -y python3-yaml python3-kubernetes poppler-utils
       # kind drives rootful Podman, so the playbook and its collections run as root.
       - run: sudo env "PATH=$PATH" ansible-galaxy collection install -r kind/requirements.yml
       - name: Stand up the environment
