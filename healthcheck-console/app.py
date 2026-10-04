@@ -169,20 +169,26 @@ def summary(application):
         raise ValueError("no summary is stored for this respondent: generate its readout") from None
 
 
+def tasks(query):
+    # The hub refuses an unbounded task list once it holds more than 500 tasks.
+    found = []
+    while len(page := hub(f"tasks?{query}&limit=500&offset={len(found)}")) == 500:
+        found += page
+    return found + page
+
+
 def remove(application):
     # The hub does not remove an application's tasks with it.
-    for task in hub("tasks"):
-        if (task.get("application") or {}).get("id") == application:
-            call(f"tasks/{task['id']}", method="DELETE")
+    for task in tasks(f"filter=application.id=={application}"):
+        call(f"tasks/{task['id']}", method="DELETE")
     call(f"applications/{application}", method="DELETE")
     return {"removed": application}
 
 
 def clear():
     applications = hub("applications")
-    for task in hub("tasks"):
-        if task.get("application"):
-            call(f"tasks/{task['id']}", method="DELETE")
+    for task in tasks("filter=application.id>0"):
+        call(f"tasks/{task['id']}", method="DELETE")
     for application in applications:
         call(f"applications/{application['id']}", method="DELETE")
     for stakeholder in hub("stakeholders"):
