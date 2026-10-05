@@ -511,11 +511,13 @@ kind/
 ├── requirements.yml
 ├── up.yml
 ├── down.yml
+├── podman/
+├── docker/
 ├── e2e.py
 └── smoke.py
 ```
 
-On OpenShift the chart builds the two images on the cluster from their Containerfiles. Elsewhere they are built locally; `kind/` holds the playbooks that do so for a kind cluster, `kind/e2e.py`, which checks a live environment persona by persona, and `kind/smoke.py`, which drives the console's page in a browser. The workflow in `.github/workflows/` runs the tests, lints the chart and runs both checks on a kind cluster.
+On OpenShift the chart builds the two images on the cluster from their Containerfiles. Elsewhere they are built locally; `kind/` holds the playbooks that do so for a kind cluster on Podman or Docker, with each engine's own steps in its directory, `kind/e2e.py`, which checks a live environment persona by persona, and `kind/smoke.py`, which drives the console's page in a browser. The workflow in `.github/workflows/` runs the tests, lints the chart and runs both checks on a kind cluster.
 
 `setup.py` runs as the chart's setup job: on OpenShift it starts the image builds, and everywhere it mints the service's API key, seeds the signal tag categories and imports the questionnaire.
 

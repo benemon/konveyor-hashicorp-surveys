@@ -4,6 +4,9 @@
   gather_facts: false
   vars:
     cluster: healthcheck
+    images:
+      - healthcheck-console
+      - healthcheck-readout
     # podman or docker. Empty takes the first of the two that answers.
     engine: ""
   environment:
@@ -38,11 +41,5 @@
         path: "{{ playbook_dir }}/kubeconfig"
         state: absent
 
-    - name: Remove the local images
-      ansible.builtin.command: "{{ engine }} rmi --force localhost/{{ item }}:latest"
-      loop:
-        - healthcheck-console
-        - healthcheck-readout
-      register: removed
-      changed_when: removed.rc == 0
-      failed_when: removed.rc != 0 and removed.stderr is not search('(?i)no such image|image not known')
+    - name: Remove the local images with the engine
+      ansible.builtin.include_tasks: "{{ engine }}/remove.yml"

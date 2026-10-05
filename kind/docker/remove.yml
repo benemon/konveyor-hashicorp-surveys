@@ -1,0 +1,6 @@
+- name: Remove the local images
+  community.docker.docker_image_remove:
+    name: "localhost/{{ item }}"
+    tag: latest
+    force: true
+  loop: "{{ images }}"

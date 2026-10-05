@@ -1,0 +1,16 @@
+- name: Build the images
+  community.docker.docker_image_build:
+    name: "localhost/{{ item }}"
+    tag: latest
+    path: "{{ playbook_dir }}/../{{ item }}"
+    # Docker looks for a Dockerfile unless the file is named.
+    dockerfile: Containerfile
+    rebuild: always
+  loop: "{{ images }}"
+
+- name: Save the images
+  community.docker.docker_image_export:
+    names:
+      - "localhost/{{ item }}:latest"
+    path: "{{ archives.path }}/{{ item }}.tar"
+  loop: "{{ images }}"
