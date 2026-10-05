@@ -150,24 +150,13 @@
         path: "{{ operator_source.path }}"
         state: absent
 
-    # Docker looks for a Dockerfile unless the file is named.
-    - name: Build the images
-      ansible.builtin.command: >-
-        {{ engine }} build --tag localhost/{{ item }}:latest
-        --file {{ playbook_dir }}/../{{ item }}/Containerfile {{ playbook_dir }}/../{{ item }}
-      loop: "{{ images }}"
-      changed_when: true
-
     - name: Create a directory for the image archives
       ansible.builtin.tempfile:
         state: directory
       register: archives
 
-    - name: Save the images
-      ansible.builtin.command: >-
-        {{ engine }} save --output {{ archives.path }}/{{ item }}.tar localhost/{{ item }}:latest
-      loop: "{{ images }}"
-      changed_when: true
+    - name: Build and save the images with the engine
+      ansible.builtin.include_tasks: "{{ engine }}/images.yml"
 
     # Loaded before the chart is installed: a pod that asks for an image the node does not
     # have yet puts the image name into a pull back-off.

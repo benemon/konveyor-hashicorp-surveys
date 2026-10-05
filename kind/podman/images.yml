@@ -1,0 +1,12 @@
+- name: Build the images
+  containers.podman.podman_image:
+    name: "localhost/{{ item }}"
+    path: "{{ playbook_dir }}/../{{ item }}"
+    force: true
+  loop: "{{ images }}"
+
+- name: Save the images
+  containers.podman.podman_save:
+    image: "localhost/{{ item }}:latest"
+    dest: "{{ archives.path }}/{{ item }}.tar"
+  loop: "{{ images }}"

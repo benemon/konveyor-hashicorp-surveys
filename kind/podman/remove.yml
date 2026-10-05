@@ -1,0 +1,6 @@
+- name: Remove the local images
+  containers.podman.podman_image:
+    name: "localhost/{{ item }}"
+    state: absent
+    force: true
+  loop: "{{ images }}"

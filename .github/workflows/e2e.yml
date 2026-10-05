@@ -51,6 +51,10 @@ jobs:
         env:
           BASE: https://localhost:8443
           E2E_CLEAR: "1"
+      - name: Tear down
+        run: >-
+          ${{ matrix.as }} ansible-playbook kind/down.yml
+          -e engine=${{ matrix.engine }} -e ansible_python_interpreter=/usr/bin/python3
       - name: Diagnostics
         if: failure()
         run: |

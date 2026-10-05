@@ -1,2 +1,4 @@
 collections:
   - name: kubernetes.core
+  - name: containers.podman
+  - name: community.docker
