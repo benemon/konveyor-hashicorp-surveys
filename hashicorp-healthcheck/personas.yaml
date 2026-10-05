@@ -1,7 +1,7 @@
 - name: "A: highly manual enterprise"
   answers: [4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 2, 2, 2]
   direct: {Infrastructure Lifecycle: strong, Image Lifecycle: strong, Machine Identity and Secrets: strong, Human Access: moderate, Service Networking: strong, Workload Lifecycle: moderate}
-  presented: [Machine Identity and Secrets, Infrastructure Lifecycle, Image Lifecycle]
+  presented: [Machine Identity and Secrets, Infrastructure Lifecycle, Image Lifecycle, Service Networking]
   adjacent: {}
   solution_adjacency: []
   patterns: [Network rules with a manual certificate lifecycle]
@@ -56,7 +56,7 @@
 - name: "G: capable platform with contradictions"
   answers: [2, 4, 1, 1, 1, 4, 1, 3, 3, 1, 3, 1, 3, 2, 3, 1, 3, 3]
   direct: {Infrastructure Lifecycle: strong, Image Lifecycle: strong, Machine Identity and Secrets: strong, Human Access: strong, Service Networking: strong}
-  presented: [Image Lifecycle, Machine Identity and Secrets, Human Access]
+  presented: [Image Lifecycle, Machine Identity and Secrets, Human Access, Infrastructure Lifecycle, Service Networking]
   adjacent: {}
   solution_adjacency: []
   patterns: [Day-two change escapes automation, 'Centralised secrets, manual credential lifecycle', Identity without session accountability, Trust by network location, 'Automated infrastructure, unmanaged
@@ -66,7 +66,7 @@
 - name: "H: hybrid estate, partly standardised"
   answers: [4, 3, 2, 2, 2, 3, 4, 4, 3, 4, 4, 4, 4, 3, 2, 3, 3, 2]
   direct: {Infrastructure Lifecycle: moderate, Image Lifecycle: moderate, Machine Identity and Secrets: moderate, Service Networking: moderate, Workload Lifecycle: moderate}
-  presented: [Image Lifecycle, Infrastructure Lifecycle, Service Networking]
+  presented: [Image Lifecycle, Infrastructure Lifecycle, Service Networking, Machine Identity and Secrets, Workload Lifecycle]
   adjacent: {}
   solution_adjacency: []
   patterns: [Automated delivery with a human gate, 'Distributed estate, fragmented control planes', Non-standard workloads sit outside the main platform, 'Automated infrastructure, unmanaged image lifecycle']

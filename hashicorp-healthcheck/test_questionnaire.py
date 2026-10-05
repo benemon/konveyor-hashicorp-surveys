@@ -368,16 +368,21 @@ class Personas(unittest.TestCase):
                             sentence, url = pointers.FEATURES[name]
                             self.assertEqual(sentence in text, shown, name)
                             self.assertEqual(text.count(f"\\url{{{url.replace('#', '\\#')}}}"), int(shown), name)
-                self.assertEqual("areas highlighted are covered in detail" in text, len(result["areas"]) > 3)
+                strengths = {a["strength"] for a in result["areas"]}
+                self.assertEqual("which are the highest priority" in text, strengths == {"strong", "moderate"})
+                self.assertEqual("Every area highlighted has a strong signal" in text, strengths == {"strong"})
+                self.assertEqual("No area has a strong signal" in text, strengths == {"moderate"})
 
-    def test_presentation_cap(self):
-        persona = next(p for p in PERSONAS if p["name"].startswith("A"))
-        result = readout.build(select(persona["answers"]), "") | {"generated": "2026-10-02T09:00:00+00:00"}
-        self.assertEqual(len(result["areas"]), 6)
-        self.assertEqual(len(result["presented"]), 3)
-        text = summary.markdown("Example Ltd", result)
-        self.assertEqual(text.count("\n## "), 3)
-        self.assertEqual(text.count("A follow-up session on"), 3)
+    def test_presents_the_strong_areas_or_else_the_moderate_ones(self):
+        for persona in PERSONAS:
+            with self.subTest(persona["name"]):
+                result = readout.build(select(persona["answers"]), "") | {"generated": "2026-10-02T09:00:00+00:00"}
+                strong = [a["capability"] for a in result["areas"] if a["strength"] == "strong"]
+                self.assertEqual(result["presented"], strong or [a["capability"] for a in result["areas"]])
+                self.assertEqual([f["capability"] for f in result["follow_up"]], result["presented"])
+                text = summary.markdown("Example Ltd", result)
+                self.assertEqual(text.count("\n## "), len(result["presented"]))
+                self.assertEqual(text.count("A follow-up session on"), len(result["presented"]))
 
     def test_summary_metadata_uses_the_readout_versions(self):
         result = summary.SAMPLE | {"questionnaire_version": "0.2", "readout_version": "0.3"}

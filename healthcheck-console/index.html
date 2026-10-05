@@ -32,6 +32,8 @@
     .console-list-controls .hds-form-field--layout-vertical { display: flex; flex-direction: column; gap: 4px; flex: 0 1 360px; }
     .console-pager { align-items: center; }
     .console-alert { margin: 16px 0; }
+    /* Helios makes the modal container click-through and relies on its own component to re-enable the dialog. */
+    .hds-app-frame__modals .hds-modal { pointer-events: auto; }
     .console-areas { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 0; padding: 0; list-style: none; }
     .console-area { display: flex; gap: 12px; align-items: center; }
     .console-area .hds-icon { flex: none; width: 24px; height: 24px; }
@@ -300,11 +302,17 @@
 
     // Relative, so that requests stay under the path the route serves.
     async function api(path, body, method) {
-      const response = await fetch(`api/${path}`, {
-        method: method || (body ? "POST" : "GET"),
-        headers: { "Content-Type": "application/json" },
-        body: body && JSON.stringify(body),
-      });
+      let response;
+      try {
+        response = await fetch(`api/${path}`, {
+          method: method || (body ? "POST" : "GET"),
+          headers: { "Content-Type": "application/json" },
+          body: body && JSON.stringify(body),
+          signal: AbortSignal.timeout(120000),
+        });
+      } catch (reason) {
+        throw new Error("No response from the console. Reload the page and try again.");
+      }
       const result = await response.json();
       if (!response.ok) {
         throw new Error(result.error);
@@ -463,7 +471,7 @@
       const shown = matching.slice(page * PAGE, (page + 1) * PAGE);
       respondentPage.textContent = matching.length
         ? `${page * PAGE + 1} to ${page * PAGE + shown.length} of ${matching.length}`
-        : "No respondents match";
+        : wanted ? "No respondents match" : "No respondents";
       respondentsPrevious.disabled = page === 0;
       respondentsNext.disabled = page >= pages - 1;
       respondentRows.replaceChildren();

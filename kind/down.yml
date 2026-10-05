@@ -19,6 +19,7 @@
       containers.podman.podman_image:
         name: "localhost/{{ item }}"
         state: absent
+        force: true
       loop:
         - healthcheck-console
         - healthcheck-readout
