@@ -64,12 +64,14 @@ Healthcheck Console has no login of its own and acts on MTA with its API key. An
 
 Two Ansible playbooks stand the whole environment up on a laptop, with upstream Konveyor, and remove it again. Once it is up it needs no network connection.
 
-Prerequisites: `podman` with a machine of at least 6 GB of memory, `kind`, `helm`, `git`, `ansible` with the collections in `kind/requirements.yml`, and the cover file described above.
+Prerequisites: Podman or Docker with at least 6 GB of memory available to it, `kind`, `helm`, `git`, `ansible` with the collection in `kind/requirements.yml`, and the cover file described above.
 
 ```sh
 ansible-galaxy collection install -r kind/requirements.yml
 ansible-playbook kind/up.yml
 ```
+
+The playbooks use Podman when it answers and Docker otherwise. To name one, add `-e engine=podman` or `-e engine=docker` to both.
 
 The playbook creates a kind cluster, installs an ingress controller and the Konveyor operator, builds the two images from their Containerfiles and loads them into the cluster, installs this chart and waits until Healthcheck Console can reach Konveyor. It ends by printing the two addresses below. On a cluster without OpenShift builds the chart uses those images and an Ingress in place of the builds and the Route.
 
@@ -81,10 +83,9 @@ Upstream Konveyor does not require a login by default.
 
 To serve a trusted certificate, put a certificate for `localhost` with its chain in `kind/tls.crt` and its key in `kind/tls.key` before running the playbook. Neither file is tracked. Without them the ingress controller serves its self-signed certificate.
 
-After a restart of the laptop, start the podman machine and then the cluster's container:
+After a restart of the laptop, start the container engine and then the cluster's container, with `podman` or `docker`:
 
 ```sh
-podman machine start
 podman start healthcheck-control-plane
 ```
 
