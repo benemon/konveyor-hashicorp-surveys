@@ -51,6 +51,11 @@ jobs:
         env:
           BASE: https://localhost:8443
           E2E_CLEAR: "1"
+          E2E_ARTEFACTS: outputs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: outputs-${{ matrix.engine }}
+          path: outputs
       - name: Tear down
         run: >-
           ${{ matrix.as }} ansible-playbook kind/down.yml
@@ -64,3 +69,13 @@ jobs:
           sudo -E kubectl -n konveyor-tackle logs job/hashicorp-healthcheck-setup --tail=200 || true
           sudo -E kubectl -n konveyor-tackle logs deploy/healthcheck-console --tail=200 || true
           sudo -E kubectl -n konveyor-tackle logs deploy/tackle-hub --tail=200 || true
+
+  compare:
+    needs: e2e
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+      - name: Compare what the two engines produced
+        run: |
+          test -n "$(ls outputs-docker)"
+          diff -r outputs-docker outputs-podman

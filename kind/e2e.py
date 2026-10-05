@@ -4,7 +4,8 @@ Creates one respondent per persona, and one per red or yellow answer on an all-g
 through Healthcheck Console; answers each through the hub; generates its readout; and checks
 that what MTA holds and what the summary prints follow from the answers chosen. E2E_CLEAR=1
 also exercises delete-all, which removes every respondent in the environment. The summary's
-text is checked when pdftotext is installed.
+text is checked when pdftotext is installed. E2E_ARTEFACTS names a directory to write each
+respondent's facts, analysis entries and summary text to, for comparing two environments.
 """
 
 import csv
@@ -37,6 +38,7 @@ QUESTIONNAIRE = yaml.safe_load((HERE.parent / "hashicorp-healthcheck" / "questio
 QUESTIONS = [q for s in QUESTIONNAIRE["sections"] for q in s["questions"]]
 BASELINE = next(p for p in PERSONAS if p["name"].startswith("D"))["answers"]
 PDFTOTEXT = shutil.which("pdftotext")
+ARTEFACTS = os.environ.get("E2E_ARTEFACTS")
 
 
 def organisation(persona):
@@ -123,7 +125,31 @@ def respond(name, answers):
 
 def respond_all(cases):
     with ThreadPoolExecutor(4) as pool:
-        return dict(zip(cases, pool.map(lambda c: respond(c, cases[c]), cases)))
+        results = dict(zip(cases, pool.map(lambda c: respond(c, cases[c]), cases)))
+    if ARTEFACTS:
+        record(results)
+    return results
+
+
+def record(results):
+    """Writes what each readout produced, without the ids and times that differ between environments."""
+    directory = Path(ARTEFACTS)
+    directory.mkdir(parents=True, exist_ok=True)
+    for name, (application, _) in results.items():
+        facts = hub(f"applications/{application}/facts/healthcheck-readout:")
+        del facts["generated"]
+        found = [
+            {key: entry.get(key) for key in ("rule", "name", "category", "effort", "description")}
+            | {"labels": sorted(entry["labels"]), "incidents": [i["message"] for i in entry["incidents"]]}
+            for entry in hub(f"applications/{application}/analysis/insights") or []
+        ]
+        found.sort(key=lambda entry: (entry["rule"], entry["effort"] or 0))
+        stem = re.sub(r"[^A-Za-z0-9]+", "-", name)
+        (directory / f"{stem}.json").write_text(json.dumps({"facts": facts, "entries": found}, indent=1, sort_keys=True))
+        if PDFTOTEXT:
+            pdf = console(f"summaries/{application}", raw=True)
+            text = subprocess.run([PDFTOTEXT, "-raw", "-", "-"], input=pdf, capture_output=True, check=True).stdout
+            (directory / f"{stem}.txt").write_bytes(text)
 
 
 def entries(application):
