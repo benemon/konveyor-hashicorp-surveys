@@ -162,7 +162,13 @@ An end-to-end check runs against a live environment. It creates a respondent per
 BASE=https://localhost:8443 python3 kind/e2e.py
 ```
 
-With `E2E_CLEAR=1` it ends by deleting every respondent, so set that only on a disposable environment. The GitHub Actions workflow in `.github/workflows/e2e.yml` runs the unit tests, `helm lint` and a register check on the Markdown on every push and pull request, then stands the kind environment up on the runner with `kind/up.yml` and runs the end-to-end check with `E2E_CLEAR=1`.
+A browser check drives the console's page in headless Chrome with real clicks: it starts an assessment and lands on the application's assessment page in MTA, filters the respondents and works the delete-all dialog. It needs the `selenium` package and Chrome:
+
+```sh
+BASE=https://localhost:8443 python3 kind/smoke.py
+```
+
+With `E2E_CLEAR=1` both checks end by deleting every respondent, so set that only on a disposable environment. The GitHub Actions workflow in `.github/workflows/e2e.yml` runs the unit tests, `helm lint` and a register check on the Markdown on every push and pull request, then stands the kind environment up on the runner with `kind/up.yml` and runs the browser check and the end-to-end check with `E2E_CLEAR=1`.
 
 ## Links
 
