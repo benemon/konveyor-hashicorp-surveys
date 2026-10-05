@@ -4,7 +4,7 @@ DIRECT = "Capability Signal"
 ADJACENT = "Adjacent Capability Signal"
 # Identifies the interpretation and rendering rules that produced a result. The questionnaire
 # has its own version, carried in the assessment.
-VERSION = "0.11"
+VERSION = "0.12"
 
 # "<facet>: <key>", one per answer. The category is never created in MTA, so the hub keeps
 # the tag in the assessment but off applications.
@@ -263,6 +263,8 @@ def build(sections, verdict):
     reds = {c: sum(e["risk"] == "red" for e in evidence[c]) for c in CAPABILITIES}
     direct = {c: "strong" if reds[c] else "moderate" for c in CAPABILITIES if evidence[c]}
     ranked = sorted(direct, key=lambda c: (direct[c] != "strong", -reds[c], -len(evidence[c])))
+    # DESIGN.md section 4.7: the strong areas, or the moderate ones when none is strong.
+    presented = [c for c in ranked if direct[c] == "strong"] or ranked
 
     adjacent = [
         {
@@ -295,11 +297,11 @@ def build(sections, verdict):
             }
             for c in ranked
         ],
-        "presented": ranked[:3],
+        "presented": presented,
         "adjacent": adjacent,
         "implementation": implementation,
         "patterns": [found for p in PATTERNS if (found := pattern(p, keys, texts, signals))],
         "in_good_shape": [c for c in CAPABILITIES if c not in direct and c not in unclear and c not in sources],
         "unknowns": unknowns,
-        "follow_up": [{"capability": c} | FOLLOW_UP[c] for c in ranked[:3]],
+        "follow_up": [{"capability": c} | FOLLOW_UP[c] for c in presented],
     }

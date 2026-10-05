@@ -45,7 +45,6 @@ LOGOS = Path("/opt/logos")
 
 # Pandoc sizes the columns of a pipe table from the dashes when a row is wider than the page.
 AREA_COLUMNS = "|--------|----------|--------------|--------------|"
-WORDS = {4: "four", 5: "five", 6: "six"}
 # Characters per line in the wider columns of an area's table, to estimate its height.
 ANSWER_WIDTH, TEXT_WIDTH = 22, 30
 
@@ -99,7 +98,7 @@ def markdown(organisation, readout):
     generated = datetime.fromisoformat(readout["generated"])
     day = f"{generated.day} {generated:%B %Y}"
     areas = readout["areas"]
-    # DESIGN.md section 4.7: the respondent sees at most three areas. MTA holds them all.
+    # DESIGN.md section 4.7: the respondent sees the strongest tier. MTA holds every area.
     presented = [a for a in areas if a["capability"] in readout["presented"]]
     lines = [
         "---",
@@ -138,8 +137,8 @@ def markdown(organisation, readout):
     if areas:
         lines += [
             "These results come from a short questionnaire and show where further discussion would benefit "
-            f"{escaped(organisation)}. Each response that highlighted an opportunity for improvement appears below "
-            "under its area, with what it means and a suggested change.",
+            f"{escaped(organisation)}. Each response that highlighted an opportunity for improvement was triaged, "
+            "and the highest priority areas have been captured in this report.",
             "",
         ]
     else:
@@ -156,10 +155,14 @@ def markdown(organisation, readout):
             lines += ["# What was highlighted", ""]
             if len(presented) < len(areas):
                 lines += [
-                    f"Three of the {WORDS[len(areas)]} areas highlighted are covered in detail below, in order of "
-                    "strength.",
+                    "This section covers the areas with a strong signal, which are the highest priority. The areas "
+                    "with a moderate signal are open for a later discussion.",
                     "",
                 ]
+            elif presented[0]["strength"] == "strong":
+                lines += ["Every area highlighted has a strong signal and is covered below.", ""]
+            else:
+                lines += ["No area has a strong signal, so this section covers the areas with a moderate signal.", ""]
         lines += [
             f"## {area['capability']}",
             "",

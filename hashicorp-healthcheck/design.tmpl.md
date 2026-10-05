@@ -119,7 +119,7 @@ The overall result is a triage status in MTA. One yellow answer leaves it green 
 
 1. Strong signals, then moderate.
 2. Within a tier, the capability with more red answers first, then more yellow answers, then the order IL, IM, MIS, HA, SN, WL.
-3. At most three direct areas.
+3. The areas with a strong signal. When none is strong, the areas with a moderate signal. Moderate areas beside a strong one are named in the summary's introduction and left for a later discussion.
 4. Adjacent areas, only for capabilities with no direct signal, in the order above. They are facilitator guidance and are not presented to the respondent.
 5. The solution adjacency note, if it applies, after the areas.
 
@@ -168,8 +168,8 @@ The summary is the document sent to the respondent after the session. `healthche
 It contains:
 
 1. a title page with the organisation as its title, the healthcheck's name as its subtitle and the date the readout was generated;
-2. an introduction that states the purpose before it describes the layout, with a table of the environment, the areas highlighted and the areas not highlighted;
-3. one section per presented area (section 4.7), in ranked order, with a row per red or yellow answer: the aspect, the response, what it means (the rationale) and the suggested change (the mitigation), in four columns. The section's heading and table are kept on one page by an estimate of the table's height. When more areas have a signal, the section's heading is followed by a sentence saying that three of them are covered in detail, in order of strength;
+2. an introduction that states the purpose and says that the highest priority areas are the ones the report covers, with a table of the environment, the areas highlighted and the areas not highlighted;
+3. one section per presented area (section 4.7), in ranked order, with a row per red or yellow answer: the aspect, the response, what it means (the rationale) and the suggested change (the mitigation), in four columns. The section's heading and table are kept on one page by an estimate of the table's height. The first section's heading is followed by a paragraph saying which tier the sections cover: the strong areas as the highest priority with the moderate ones left for a later discussion, every area when all are strong, or the moderate areas when none is strong;
 4. the patterns that hold;
 5. the questions answered "unknown";
 6. a next step per presented area, with the product's mark: a recommendation of a follow-up session on the product, then one paragraph per red or yellow answer made of the catalogue sentences of its pointers, each with its documentation page as a footnote, then the roles worth involving. A feature appears once per area, and a documentation page is footnoted once per summary; a later mention repeats the footnote's number;
@@ -230,7 +230,7 @@ Personas, in `personas.yaml`: ten reference respondents, each with its answers a
 - For every pattern a persona triggers, its capabilities equal the union of the direct and adjacent tags of its matched answers, and its products are those capabilities' products.
 - Service Networking evidence alone, with or without "certificates are not used", surfaces no Vault pointer and no Vault pattern product.
 - The summary does not contain the overall result's message.
-- The summary shows exactly the presented areas: persona A has six areas with a signal and three sections and next steps. Each presented area's next step carries the catalogue sentence of every feature its pointers name, and each documentation page once.
+- The summary shows exactly the presented areas: the strong areas, or the moderate ones when none is strong; persona A has six areas with a signal and four sections and next steps. Each presented area's next step carries the catalogue sentence of every feature its pointers name, and each documentation page once.
 - The summary's metadata carries the versions in the readout it renders, not the running code's.
 - The sample readout the image build renders is accepted by the summary.
 - Single-gap matrix: from an all-green baseline, each red or yellow answer on its own gives exactly its capability's signal, its own evidence, its own adjacency and no pattern that does not involve it.
