@@ -22,14 +22,25 @@ jobs:
   e2e:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - engine: docker
+            as: ""
+          # kind drives rootful Podman, so the playbook and its collection run as root.
+          - engine: podman
+            as: sudo env "PATH=$PATH"
+    name: e2e (${{ matrix.engine }})
     steps:
       - uses: actions/checkout@v4
       - run: sudo apt-get install -y python3-yaml python3-kubernetes python3-selenium poppler-utils
-      # kind drives rootful Podman, so the playbook and its collections run as root.
-      - run: sudo env "PATH=$PATH" ansible-galaxy collection install -r kind/requirements.yml
+      - run: ${{ matrix.as }} ansible-galaxy collection install -r kind/requirements.yml
       - name: Stand up the environment
         # The runner's Ansible is a pipx venv; the Kubernetes library is on the system interpreter.
-        run: sudo env "PATH=$PATH" ansible-playbook kind/up.yml -e ansible_python_interpreter=/usr/bin/python3
+        run: >-
+          ${{ matrix.as }} ansible-playbook kind/up.yml
+          -e engine=${{ matrix.engine }} -e ansible_python_interpreter=/usr/bin/python3
       - name: Run the browser check
         run: python3 kind/smoke.py
         env:

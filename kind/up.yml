@@ -7,17 +7,40 @@
     namespace: konveyor-tackle
     kubeconfig: "{{ playbook_dir }}/kubeconfig"
     konveyor_version: v0.11.0
+    # podman or docker. Empty takes the first of the two that answers.
+    engine: ""
     images:
       - healthcheck-console
       - healthcheck-readout
   environment:
-    KIND_EXPERIMENTAL_PROVIDER: podman
+    KIND_EXPERIMENTAL_PROVIDER: "{{ engine }}"
   module_defaults:
     group/kubernetes.core.k8s:
       kubeconfig: "{{ kubeconfig }}"
     kubernetes.core.helm:
       kubeconfig: "{{ kubeconfig }}"
   tasks:
+    - name: Look for a container engine
+      ansible.builtin.command: "{{ item }} info"
+      loop: "{{ [engine] if engine else ['podman', 'docker'] }}"
+      register: engines
+      changed_when: false
+      failed_when: false
+
+    - name: Note the engines that answer
+      ansible.builtin.set_fact:
+        answering: "{{ engines.results | selectattr('rc', 'defined') | selectattr('rc', 'eq', 0) | map(attribute='item') }}"
+
+    - name: Choose the container engine
+      ansible.builtin.set_fact:
+        engine: "{{ answering | first | default('') }}"
+      when: not engine
+
+    - name: Require a container engine
+      ansible.builtin.assert:
+        that: engine in answering
+        fail_msg: No container engine answers. Start podman or docker, or name one with -e engine=podman or -e engine=docker.
+
     - name: List kind clusters
       ansible.builtin.command: kind get clusters
       register: clusters
@@ -127,12 +150,13 @@
         path: "{{ operator_source.path }}"
         state: absent
 
+    # Docker looks for a Dockerfile unless the file is named.
     - name: Build the images
-      containers.podman.podman_image:
-        name: "localhost/{{ item }}"
-        path: "{{ playbook_dir }}/../{{ item }}"
-        force: true
+      ansible.builtin.command: >-
+        {{ engine }} build --tag localhost/{{ item }}:latest
+        --file {{ playbook_dir }}/../{{ item }}/Containerfile {{ playbook_dir }}/../{{ item }}
       loop: "{{ images }}"
+      changed_when: true
 
     - name: Create a directory for the image archives
       ansible.builtin.tempfile:
@@ -140,10 +164,10 @@
       register: archives
 
     - name: Save the images
-      containers.podman.podman_save:
-        image: "localhost/{{ item }}:latest"
-        dest: "{{ archives.path }}/{{ item }}.tar"
+      ansible.builtin.command: >-
+        {{ engine }} save --output {{ archives.path }}/{{ item }}.tar localhost/{{ item }}:latest
       loop: "{{ images }}"
+      changed_when: true
 
     # Loaded before the chart is installed: a pod that asks for an image the node does not
     # have yet puts the image name into a pull back-off.
