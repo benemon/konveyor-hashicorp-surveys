@@ -146,7 +146,13 @@ Every feature a pointer names is in the feature catalogue in the same file: its 
 
 A pattern's pointers are those of the answers behind it.
 
-### 4.10 Readout
+### 4.10 Business impact
+
+Each scored aspect has a business impact: what the organisation gains when the suggested change is made, in one sentence per dimension. The dimensions are speed (how soon products, changes and people become productive), cost (engineer time, duplicated effort, wasted capacity, the cost of incidents and audits) and risk (the likelihood and impact of a breach, an outage or a compliance finding). An aspect states its primary dimension first and any other the change materially moves. A dimension is left out when the benefit does not hold for every red or yellow answer to the question, so a statement is true whichever answer the respondent gave. The statements name no product and no feature, and claim no figures. They are held in `healthcheck-readout/impacts.py` by aspect, with the reason for each dimension not claimed.
+
+{{IMPACTS}}
+
+### 4.11 Readout
 
 The `healthcheck-readout` addon derives the readout from a completed assessment. `healthcheck-readout/readout.py` is the single implementation of sections 4.3 to 4.5 and 4.7 to 4.9. The overall result (4.6) is MTA's own.
 
@@ -156,12 +162,12 @@ The addon cannot read the assessment itself. The Healthcheck Console service rea
 
 Running the addon again replaces its previous output. The addon writes to the application:
 
-- an analysis with one entry per red or yellow answer, one per pattern and one per adjacent signal. Each answer is entered twice, with an effort of 1 for Issues and with none for Insights. Patterns and adjacent signals are entered for Insights only. An adjacent signal's entry is in the category `Adjacent`, names its source capabilities and says that it is not a direct finding. An application's effort is therefore its number of gaps. An entry's target technologies are the capabilities and products it relates to. Its description carries the rationale, the suggested change and, for each feature its pointers name, the catalogue sentence and documentation link, under the feature's product; for a pattern it also carries the answers behind it;
+- an analysis with one entry per red or yellow answer, one per pattern and one per adjacent signal. Each answer is entered twice, with an effort of 1 for Issues and with none for Insights. Patterns and adjacent signals are entered for Insights only. An adjacent signal's entry is in the category `Adjacent`, names its source capabilities and says that it is not a direct finding. An application's effort is therefore its number of gaps. An entry's target technologies are the capabilities and products it relates to. Its description carries the rationale, the suggested change, the aspect's business impact and, for each feature its pointers name, the catalogue sentence and documentation link, under the feature's product; for a pattern it also carries the answers behind it;
 - facts under the source `healthcheck-readout`: `questionnaire_version`, `readout_version`, `environment`, `verdict`, `direct`, `areas` (every area with a signal, ranked, with its product, strength, facets and evidence), `presented`, `adjacent`, `implementation`, `patterns`, `in_good_shape`, `unknowns`, `follow_up` (topics, roles, product and talk track for each presented area) and `generated`;
-- an executive summary as a PDF, `healthcheck-summary.pdf` in the application's bucket (section 4.11);
+- an executive summary as a PDF, `healthcheck-summary.pdf` in the application's bucket (section 4.12);
 - one tag per capability with a direct signal, named for the product and the strength, such as `Vault: strong`. Each product has its own tag category, in the product's brand colour. The addon creates these categories on first use.
 
-### 4.11 Executive summary
+### 4.12 Executive summary
 
 The summary is the document sent to the respondent after the session. `healthcheck-readout/summary.py` writes it from the readout as Pandoc Markdown, and renders it to A4 PDF with Pandoc, the Tectonic TeX engine, the Eisvogel template and IBM Plex Sans. The addon's image is built on the UBI Python image. Its build downloads those four from their GitHub releases, the product marks from the Flight icons package and the TeX files the summary needs, and installs svglib and reportlab to render the marks, so the addon needs no network to render.
 
@@ -169,10 +175,10 @@ It contains:
 
 1. a title page with the organisation as its title, the healthcheck's name as its subtitle and the date the readout was generated;
 2. an introduction that states the purpose and says that the highest priority areas are the ones the report covers, with a table of the environment, the areas highlighted and the areas not highlighted;
-3. one section per presented area (section 4.7), in ranked order, with a row per red or yellow answer: the aspect, the response, what it means (the rationale) and the suggested change (the mitigation), in four columns. The section's heading and table are kept on one page by an estimate of the table's height. The first section's heading is followed by a paragraph saying which tier the sections cover: the strong areas as the highest priority with the moderate ones left for a later discussion, every area when all are strong, or the moderate areas when none is strong;
+3. one section per presented area (section 4.7), in ranked order, with a table per red or yellow answer. The table's heading is the aspect, across both columns, and its four rows are labelled: the response, what it means (the rationale), the suggested change (the mitigation) and the business impact (section 4.10), primary dimension first. A table is never split across pages, and an area's heading stays with its first table. The first section's heading is followed by a paragraph saying which tier the sections cover: the strong areas as the highest priority with the moderate ones left for a later discussion, every area when all are strong, or the moderate areas when none is strong;
 4. the patterns that hold;
 5. the questions answered "unknown";
-6. a next step per presented area, with the product's mark: a recommendation of a follow-up session on the product, then one paragraph per red or yellow answer made of the catalogue sentences of its pointers, each with its documentation page as a footnote, then the roles worth involving. A feature appears once per area, and a documentation page is footnoted once per summary; a later mention repeats the footnote's number;
+6. a next step per presented area, with the product's mark: a recommendation of a follow-up session on the product, then, indented under it, one paragraph per red or yellow answer made of the catalogue sentences of its pointers, each with its documentation page as a footnote, then the roles worth involving. A feature appears once per area, and a documentation page is footnoted once per summary; a later mention repeats the footnote's number;
 7. when the solution adjacency note applies (section 4.5), a closing sentence naming Infrastructure Lifecycle's product as relevant to those sessions.
 
 When no area has a signal, the introduction says so, and the summary has no next steps and makes no claim that further discussion would help.
@@ -211,6 +217,8 @@ Structure of the questionnaire:
 - Red and yellow answers have a rationale and a mitigation. Green and unknown answers have neither.
 - Every key a pattern refers to exists.
 - Capability pointers exist for exactly the red and yellow answers, each lists its capability's own product first, and each names exactly the products of the answer's direct and adjacent capabilities.
+- No aspect's table in the summary exceeds 40 lines of its source, about two thirds of a page, so a table that cannot be split always fits.
+- Every scored aspect has a business impact, with every dimension either stated or given a reason for its absence, in one sentence each that names no product.
 - Every feature a pointer names is catalogued, and every catalogued feature is named by a pointer, with a one-sentence description and a documentation page on developer.hashicorp.com.
 - No string in the questionnaire contains Terraform, Packer, Vault, Boundary, Consul, Nomad or HashiCorp, apart from the questionnaire's name.
 - `DESIGN.md` equals the output of `gen_design.py`.
@@ -220,7 +228,7 @@ Personas, in `personas.yaml`: ten reference respondents, each with its answers a
 - Every persona's readout equals its expected values. The overall result is computed with the threshold rule in section 3.
 - Every pattern holds for at least one persona.
 - For every persona, the gaps reported are exactly its red and yellow answers, with their wording.
-- For every persona, the executive summary has a section for each presented area and a row for each of its answers.
+- For every persona, the executive summary has a section for each presented area and, for each of its answers, the response, what it means, the suggested change and the business impact.
 - For every persona, no area with a direct or adjacent signal is reported as having no signal.
 - For every persona, the summary says further discussion would benefit the organisation, and lists next steps, only when an area is highlighted.
 - The three image questions signal Image Lifecycle on red and yellow answers only, each has a not-applicable answer, and choosing not-applicable for all three creates no signal, pattern or product.
@@ -260,6 +268,7 @@ healthcheck-readout/
 ├── app.py
 ├── readout.py
 ├── pointers.py
+├── impacts.py
 ├── summary.py
 └── fetch.py
 healthcheck-console/

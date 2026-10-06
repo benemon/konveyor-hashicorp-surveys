@@ -2,9 +2,11 @@ import json
 import re
 import subprocess
 import tempfile
+import textwrap
 from datetime import datetime
 from pathlib import Path
 
+from impacts import IMPACTS
 from pointers import FEATURES
 from readout import FOLLOW_UP
 
@@ -22,7 +24,7 @@ SAMPLE = {
             "strength": "strong",
             "evidence": [
                 {
-                    "facet": "f",
+                    "facet": "access path",
                     "answer": "a",
                     "rationale": "r",
                     "mitigation": "m",
@@ -43,11 +45,6 @@ TEMPLATE = "/opt/eisvogel.latex"
 # Product marks as PDF, made by the image build. The summary shows a product's mark beside its next step.
 LOGOS = Path("/opt/logos")
 
-# Pandoc sizes the columns of a pipe table from the dashes when a row is wider than the page.
-AREA_COLUMNS = "|--------|----------|--------------|--------------|"
-# Characters per line in the wider columns of an area's table, to estimate its height.
-ANSWER_WIDTH, TEXT_WIDTH = 22, 30
-
 
 def escaped(text):
     return re.sub(r"([\\`*_{}\[\]()<>#+\-.!|~^$@%&])", r"\\\1", text)
@@ -63,6 +60,25 @@ def summary_table(rows):
     for item, value in cells:
         for number, line in enumerate(value):
             lines.append(f"| {(item if number == 0 else ''):<{left}} | {line:<{right}} |")
+        lines.append(rule)
+    return lines
+
+
+def aspect_table(heading, rows):
+    """Returns a grid table with a heading across both columns, then a bold label and its text per row."""
+    rows = [(f"**{item}**", value) for item, value in rows]
+    label, width = max(len(item) for item, _ in rows), 72
+    rule = f"+{'-' * (label + 2)}+{'-' * (width + 2)}+"
+    lines = [f"+{'-' * (label + width + 5)}+", f"| {f'**{heading}**':<{label + width + 3}} |", rule.replace("-", "=")]
+    for item, value in rows:
+        # A list item's later lines are indented under its text, which keeps them in the item.
+        wrapped = [
+            line
+            for text in (value if isinstance(value, list) else [value])
+            for line in textwrap.wrap(text, width, subsequent_indent="  " if text.startswith("- ") else "")
+        ]
+        for number, line in enumerate(wrapped):
+            lines.append(f"| {(item if number == 0 else ''):<{label}} | {line:<{width}} |")
         lines.append(rule)
     return lines
 
@@ -84,14 +100,6 @@ def footnote(url, noted):
 
 def needspace(count):
     return ["", f"\\needspace{{{count}\\baselineskip}}", ""]
-
-
-def lines_needed(evidence):
-    rows = sum(
-        max(len(e["answer"]) // ANSWER_WIDTH, len(e["rationale"]) // TEXT_WIDTH, len(e["mitigation"]) // TEXT_WIDTH) + 2
-        for e in evidence
-    )
-    return rows + 7
 
 
 def markdown(organisation, readout):
@@ -125,6 +133,15 @@ def markdown(organisation, readout):
         "  - \\usepackage{enumitem}",
         "  - \\usepackage{etoolbox}",
         "  - \\AtBeginEnvironment{longtable}{\\setlist[itemize]{leftmargin=1.1em}}",
+        # A long table repeats its header when it runs over a page. Ending every row the way the
+        # starred row end does forbids a break inside a table, so one that does not fit moves whole.
+        "  - |",
+        "    ```{=latex}",
+        "    \\makeatletter",
+        "    \\def\\LT@tabularcr{\\relax\\iffalse{\\fi\\ifnum0=`}\\fi"
+        "\\def\\crcr{\\LT@crcr\\noalign{\\nobreak}}\\let\\cr\\crcr\\LT@t@bularcr}",
+        "    \\makeatother",
+        "    ```",
         "---",
         "",
         "# Introduction",
@@ -149,9 +166,24 @@ def markdown(organisation, readout):
         ("Not highlighted", [f"- {c}" for c in readout["in_good_shape"]] or "None"),
     ])
     for number, area in enumerate(presented):
-        # Keeps an area's heading and table on one page.
-        lines += needspace(lines_needed(area["evidence"]) + (0 if number else 4))
+        tables = [
+            aspect_table(
+                e["facet"].capitalize(),
+                [
+                    ("Your response", e["answer"]),
+                    ("What this means", e["rationale"]),
+                    ("Suggested change", e["mitigation"]),
+                    (
+                        "Business impact",
+                        [f"- *{d.capitalize()}.* {text}" for d, text in IMPACTS[e["facet"]]["impacts"].items()],
+                    ),
+                ],
+            )
+            for e in area["evidence"]
+        ]
         if number == 0:
+            # Starts the section where its first table fits, at about a line per line of the table's source.
+            lines += needspace(len(tables[0]) + 10)
             lines += ["# What was highlighted", ""]
             if len(presented) < len(areas):
                 lines += [
@@ -163,16 +195,9 @@ def markdown(organisation, readout):
                 lines += ["Every area highlighted has a strong signal and is covered below.", ""]
             else:
                 lines += ["No area has a strong signal, so this section covers the areas with a moderate signal.", ""]
-        lines += [
-            f"## {area['capability']}",
-            "",
-            "| **Aspect** | **Response** | **What this means** | **Suggested change** |",
-            AREA_COLUMNS,
-        ]
-        lines += [
-            f"| {e['facet'].capitalize()} | {e['answer']} | {e['rationale']} | {e['mitigation']} |"
-            for e in area["evidence"]
-        ]
+        lines += [f"## {area['capability']}", ""]
+        for table in tables:
+            lines += [*table, ""]
     if readout["patterns"]:
         lines += ["", "# Patterns across areas", ""]
         lines += [f"- **{p['name']}.** {p['detail']}" for p in readout["patterns"]]
@@ -191,6 +216,8 @@ def markdown(organisation, readout):
             f"{follow_up['product']} is recommended. The features it would cover{editions}:",
             "",
         ]
+        # The features sit under the step, indented from it.
+        lines += ["    ```{=latex}", "    \\begin{list}{}{\\setlength{\\leftmargin}{1.5em}\\setlength{\\topsep}{0pt}}\\item[]", "    ```", ""]
         shown = set()
         for e in area["evidence"]:
             sentences = []
@@ -202,6 +229,7 @@ def markdown(organisation, readout):
                 sentences.append(sentence + footnote(url, noted))
             if sentences:
                 lines += [f"    **{e['facet'].capitalize()}.** {' '.join(sentences)}", ""]
+        lines += ["    ```{=latex}", "    \\end{list}", "    ```", ""]
         roles = ", ".join(role[0].lower() + role[1:] for role in follow_up["roles"])
         lines += [f"    Worth involving: {roles}.", ""]
     if readout["implementation"]:

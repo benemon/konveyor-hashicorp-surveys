@@ -11,6 +11,7 @@ HERE = Path(__file__).parent
 # The addon's logic is the single implementation of the signal model.
 sys.path.insert(0, str(HERE.parent / "healthcheck-readout"))
 import gen_design  # noqa: E402
+import impacts  # noqa: E402
 import pointers  # noqa: E402
 import readout  # noqa: E402
 import summary  # noqa: E402
@@ -38,6 +39,10 @@ def choose(answers, chosen):
         index = FACETS.index(facet)
         answers[index] = next(a["order"] for a in QUESTIONS[index]["answers"] if tags(a, KEY) == {f"{facet}: {key}"})
     return answers
+
+
+def squash(text):
+    return re.sub(r"[^a-z0-9]", "", text.lower())
 
 
 def strings(node):
@@ -221,6 +226,32 @@ class Structure(unittest.TestCase):
     def test_design_document_is_generated(self):
         self.assertEqual((HERE / "DESIGN.md").read_text(), gen_design.render())
 
+    def test_every_scored_aspect_has_a_business_impact(self):
+        self.assertEqual(list(impacts.IMPACTS), FACETS[1:])
+        for facet, entry in impacts.IMPACTS.items():
+            with self.subTest(facet):
+                self.assertTrue(entry["impacts"])
+                self.assertEqual(set(entry["impacts"]) | set(entry["omitted"]), {"speed", "cost", "risk"})
+                self.assertFalse(set(entry["impacts"]) & set(entry["omitted"]))
+                for text in entry["impacts"].values():
+                    self.assertRegex(text, r"^[A-Z][^.]*\.$")
+                    self.assertTrue(15 <= len(text.split()) <= 30, text)
+                    self.assertIsNone(PRODUCTS.search(text), text)
+
+    def test_no_aspect_table_approaches_a_page(self):
+        # A table is never split, so one taller than a page would run off it. A page holds about 58 lines.
+        for question, facet in zip(SCORED, FACETS[1:]):
+            impact = [f"- *{d.capitalize()}.* {text}" for d, text in impacts.IMPACTS[facet]["impacts"].items()]
+            for answer in question["answers"]:
+                if answer["risk"] in ("red", "yellow"):
+                    rows = [
+                        ("Your response", answer["text"]),
+                        ("What this means", answer["rationale"]),
+                        ("Suggested change", answer["mitigation"]),
+                        ("Business impact", impact),
+                    ]
+                    self.assertLessEqual(len(summary.aspect_table(facet.capitalize(), rows)), 40, answer["text"])
+
     def test_capability_order(self):
         self.assertEqual(
             CAPABILITIES,
@@ -363,7 +394,13 @@ class Personas(unittest.TestCase):
                     self.assertEqual(f"## {area['capability']}" in text, shown)
                     self.assertEqual(f"**{area['capability']}.** A follow-up session" in text, shown)
                     for e in area["evidence"]:
-                        self.assertEqual(f"| {e['answer']} |" in text, shown)
+                        stated = "".join(f"{d}. {t}" for d, t in impacts.IMPACTS[e["facet"]]["impacts"].items())
+                        table = (
+                            f"{e['facet']} Your response {e['answer']} What this means {e['rationale']} "
+                            f"Suggested change {e['mitigation']} Business impact {stated}"
+                        )
+                        # A table's cells wrap, so the comparison is on letters and digits.
+                        self.assertEqual(squash(table) in squash(text), shown, e["facet"])
                         for name in (f for features in e["pointers"].values() for f in features):
                             sentence, url = pointers.FEATURES[name]
                             self.assertEqual(sentence in text, shown, name)

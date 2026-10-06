@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 
 import readout
 import summary
+from impacts import IMPACTS
 from pointers import FEATURES
 
 HUB = os.environ["HUB_BASE_URL"].rstrip("/")
@@ -59,6 +60,12 @@ def insight(rule, headline, detail, category, answer, targets, effort=0):
     }
 
 
+def impact_markdown(facet):
+    lines = ["##### Business impact", ""]
+    lines += [f"- **{dimension.capitalize()}.** {text}" for dimension, text in IMPACTS[facet]["impacts"].items()]
+    return "\n".join(lines) + "\n\n"
+
+
 def pointers_markdown(pointers):
     if not pointers:
         return ""
@@ -81,6 +88,7 @@ def insights(result):
                     rule,
                     f"{item['facet'].capitalize()}: {item['answer']}",
                     f"{item['rationale']}\n\n**Suggested change:** {item['mitigation']}\n\n"
+                    + impact_markdown(item["facet"])
                     + pointers_markdown(item["pointers"]),
                     "High" if item["risk"] == "red" else "Medium",
                     f"{item['question']} {item['answer']}",
