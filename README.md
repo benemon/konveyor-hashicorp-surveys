@@ -8,7 +8,7 @@ It indicates whether a deeper discovery session is warranted, and in which of si
 
 It is not an architecture assessment or a lead score. Its results are signals for a follow-up. The readout names the product associated with each area as the starting point for that follow-up.
 
-Validated against Migration Toolkit for Applications (MTA) 8.3.0. The design is in [hashicorp-healthcheck/DESIGN.md](hashicorp-healthcheck/DESIGN.md).
+It runs on upstream Konveyor, on a laptop with kind, or on Migration Toolkit for Applications (MTA) on OpenShift. Validated against Konveyor v0.11.0 and MTA 8.3.0. The design is in [hashicorp-healthcheck/DESIGN.md](hashicorp-healthcheck/DESIGN.md).
 
 ## Components
 
@@ -16,60 +16,23 @@ Validated against Migration Toolkit for Applications (MTA) 8.3.0. The design is 
 - `healthcheck-console/`: a small Python service served on MTA's own host at `/console/`. Its page starts an assessment from an organisation and a contact email, generates readouts, serves each respondent's executive summary and has a maintenance tab. It is styled with Helios, the HashiCorp design system, whose stylesheet and icons the image build fetches. Sharing MTA's host keeps a logged-in browser tab logged in when the page sends it on to the questionnaire.
 - `healthcheck-readout/`: an MTA addon. It derives the readout from a completed assessment and writes it to the application as Issues, Insights, facts, product tags and an executive summary in PDF. For each highlighted aspect the summary gives the response, what it means, a suggested change and the business impact of making it, in terms of speed, cost and risk. Running it again replaces its previous output.
 
-## Install on OpenShift
+## Install on kind
 
-The repository root is a Helm chart. It takes a namespace that holds only the MTA or Konveyor operator to a working environment: the instance, the questionnaire and its tags, Healthcheck Console on the UI's host and the readout addon.
+Two Ansible playbooks stand the whole environment up on a laptop, with upstream Konveyor, and remove it again. Once it is up it needs no network connection. This is the usual way to run the healthcheck; OpenShift is covered below.
 
 Prerequisites:
 
-- An OpenShift cluster with the MTA or Konveyor operator installed in the target namespace, and no instance in it.
-- `oc` and `helm`, logged in with rights to create the resources in `templates/` in that namespace.
-- An A4 cover for the summary's title page at `healthcheck-readout/cover.pdf`, at most 500 KB because the chart ships it in a ConfigMap. The file is not tracked. Without it the title page is plain.
-
-Steps:
-
-1. Install the chart:
-
-   ```sh
-   helm install hashicorp-healthcheck . -n openshift-mta
-   ```
-
-2. Wait for the setup job and the two builds to complete:
-
-   ```sh
-   oc -n openshift-mta get jobs,builds
-   ```
-
-   The setup job starts the builds, waits for the hub, mints the service's API key, seeds the tag categories and imports the questionnaire.
-
-3. Open the Healthcheck Console address that the install notes print.
-
-`helm upgrade` runs the setup job again, which rebuilds the images and updates the questionnaire.
-
-### Values
-
-| Value | Default | Purpose |
-|---|---|---|
-| `appName` | `mta` | The operator's application name. The hub service is `<appName>-hub` and the UI route is `<appName>`. Upstream Konveyor uses `tackle`. |
-| `tackle.spec` | `{}` | Spec of the instance the operator creates. |
-| `admin.username`, `admin.password` | `admin`, `admin` | A hub login allowed to create API keys. Used once, to mint the key Healthcheck Console uses. |
-| `host` | the UI route's host | Host of the Healthcheck Console route. |
-| `pythonImage` | `registry.access.redhat.com/ubi9/python-312-minimal` | Image for the setup job. |
-| `images.console`, `images.readout` | `localhost/healthcheck-console:latest`, `localhost/healthcheck-readout:latest` | The two images on a cluster without OpenShift builds. |
-
-Healthcheck Console has no login of its own and acts on MTA with its API key. Anyone who can reach MTA's host can list respondents and their contact emails, start assessments, generate readouts, download summaries and delete respondents. Expose it only on a trusted network.
-
-
-## Run locally on kind
-
-Two Ansible playbooks stand the whole environment up on a laptop, with upstream Konveyor, and remove it again. Once it is up it needs no network connection.
-
-Prerequisites: Podman or Docker with at least 6 GB of memory available to it, `kind`, `helm`, `git`, `ansible` with the collections in `kind/requirements.yml`, and the cover file described above.
+- Podman or Docker with at least 6 GB of memory available to it.
+- `kind`, `helm`, `git` and `ansible`, with the collections in `kind/requirements.yml`.
+- An A4 cover for the summary's title page at `healthcheck-readout/cover.pdf`, at most 500 KB. The file is not tracked. Without it the title page is plain.
+- Outbound access during `kind/up.yml`, which fetches the Konveyor operator, the ingress controller, the base image from `registry.access.redhat.com`, releases from `github.com`, Helios assets from `unpkg.com`, two packages from PyPI and a TeX distribution. After that the environment runs offline.
 
 ```sh
 ansible-galaxy collection install -r kind/requirements.yml
 ansible-playbook kind/up.yml
 ```
+
+The first run takes about ten minutes, most of it building the readout image. Running it again rebuilds only what changed.
 
 The playbooks use Podman when it answers and Docker otherwise. To name one, add `-e engine=podman` or `-e engine=docker` to both. The steps that differ by engine are in `kind/podman/` and `kind/docker/`, each written with that engine's collection.
 
@@ -79,7 +42,7 @@ The playbook creates a kind cluster, installs an ingress controller and the Konv
 - Healthcheck Console: `https://localhost:8443/console/`
 - Kubeconfig: `kind/kubeconfig`
 
-Upstream Konveyor does not require a login by default.
+Upstream Konveyor does not require a login by default, so the questionnaire opens without one and no credentials are configured.
 
 To serve a trusted certificate, put a certificate for `localhost` with its chain in `kind/tls.crt` and its key in `kind/tls.key` before running the playbook. Neither file is tracked. Without them the ingress controller serves its self-signed certificate.
 
@@ -95,9 +58,56 @@ To remove the cluster, its kubeconfig and the two local images:
 ansible-playbook kind/down.yml
 ```
 
+## Install on OpenShift
+
+The repository root is a Helm chart, the same one the kind playbook installs. On OpenShift it takes a namespace that holds only the MTA or Konveyor operator to a working environment: the instance, the questionnaire and its tags, Healthcheck Console on the UI's host and the readout addon, with the two images built on the cluster.
+
+Prerequisites:
+
+- An OpenShift cluster with the MTA or Konveyor operator installed in the target namespace, and no instance in it. The chart creates the instance.
+- `oc` and `helm`, logged in as an admin of that namespace who can also create `tackle.konveyor.io` resources (the `Tackle` instance and the `Addon`).
+- The cover file described under kind, at most 500 KB because the chart ships it in a ConfigMap.
+- Outbound access for build pods to the same hosts the kind playbook fetches from: `registry.access.redhat.com`, `github.com`, `unpkg.com`, PyPI and the TeX distribution's host.
+- MTA requires a login by default. Set `admin.password` to the MTA admin's current password; MTA's initial password has to be changed at first login, and the chart's default of `admin` matches only an instance whose password was set to that.
+
+Steps:
+
+1. Install the chart:
+
+   ```sh
+   helm install hashicorp-healthcheck . -n openshift-mta --set admin.password=<MTA admin password>
+   ```
+
+2. Wait for the setup job and the two builds to complete. The instance takes a few minutes to come up and the readout build about five more:
+
+   ```sh
+   oc -n openshift-mta get jobs,builds
+   ```
+
+   The setup job starts the builds, waits for the hub, mints the service's API key, seeds the tag categories and imports the questionnaire.
+
+3. Log in to MTA once in a browser, then open the Healthcheck Console address that the install notes print in the same tab.
+
+`helm upgrade` runs the setup job again, which rebuilds the images and updates the questionnaire.
+
+`helm uninstall` removes everything the chart created, including the `Tackle` instance and so every application, assessment and readout in it. The operator stays.
+
+### Values
+
+| Value | Default | Purpose |
+|---|---|---|
+| `appName` | `mta` | The operator's application name. The hub service is `<appName>-hub` and the UI route is `<appName>`. Upstream Konveyor uses `tackle`. |
+| `tackle.spec` | `{}` | Spec of the instance the operator creates. |
+| `admin.username`, `admin.password` | `admin`, `admin` | A hub login allowed to create API keys. Used once, to mint the key Healthcheck Console uses. Not used on upstream Konveyor. |
+| `host` | the UI route's host | Host of the Healthcheck Console route. |
+| `pythonImage` | `registry.access.redhat.com/ubi9/python-312-minimal` | Image for the setup job. |
+| `images.console`, `images.readout` | `localhost/healthcheck-console:latest`, `localhost/healthcheck-readout:latest` | The two images on a cluster without OpenShift builds. |
+
+Healthcheck Console has no login of its own and acts on MTA with its API key. Anyone who can reach MTA's host can list respondents and their contact emails, start assessments, generate readouts, download summaries and delete respondents. Expose it only on a trusted network.
+
 ## Run an assessment
 
-1. In a browser tab that is logged in to MTA, open `/console/` on MTA's host. Upstream Konveyor on kind needs no login.
+1. Open `/console/` on the platform's host: `https://localhost:8443/console/` on kind, which needs no login, or MTA's host in a browser tab that is logged in to MTA.
 2. On "Start an assessment", enter the organisation and a contact email. The service creates the stakeholder, the application (named for the organisation) and the assessment, and opens the application's assessment page in MTA. An organisation that already exists reopens its assessment.
 3. Click the questionnaire's button. It reads "Retake" because the assessment already exists with the contact as its stakeholder, which is what lets the wizard's first step pass with "Next".
 4. Complete the questionnaire.
@@ -156,6 +166,8 @@ The "Maintenance" tab lists every respondent with its contact, whether its asses
 Deleting leaves the questionnaire and the tags in place. Neither delete can be undone.
 
 ## Tests
+
+None of this is needed to install or run the healthcheck.
 
 ```sh
 cd hashicorp-healthcheck && python3 -m unittest
