@@ -105,14 +105,38 @@ Steps:
 
 Healthcheck Console has no login of its own and acts on MTA with its API key. Anyone who can reach MTA's host can list respondents and their contact emails, start assessments, generate readouts, download summaries and delete respondents. Expose it only on a trusted network.
 
-## Run an assessment
+## Using the assessment tool
 
-1. Open `/console/` on the platform's host: `https://localhost:8443/console/` on kind, which needs no login, or MTA's host in a browser tab that is logged in to MTA.
-2. On "Start an assessment", enter the organisation and a contact email. The service creates the stakeholder, the application (named for the organisation) and the assessment, and opens the application's assessment page in MTA. An organisation that already exists reopens its assessment.
-3. Click the questionnaire's button. It reads "Retake" because the assessment already exists with the contact as its stakeholder, which is what lets the wizard's first step pass with "Next".
-4. Complete the questionnaire.
-5. On "Generate a readout", choose the organisation. The tab reports what was stored: the verdict, each indicated product with its strength, the number of issues and the patterns. It links to the executive summary, a PDF to send to the respondent.
-6. Read the result in MTA on the application: its risk, its Issues and Insights, the facts on its Reports tab and its product tags. The `presented` fact lists the areas to present, in order.
+The facilitator works from Healthcheck Console; the respondent answers the questionnaire in Konveyor or MTA. One browser tab carries both, since the console sends the tab on to the questionnaire and the two share a host.
+
+### 1. Start
+
+Open the console: `https://localhost:8443/console/` on kind, or `/console/` on MTA's host in a tab that is logged in to MTA. On the "Start an assessment" tab enter:
+
+- **Organisation**: the respondent's organisation. It names the respondent everywhere afterwards, including on the summary's cover, so write it as it should appear there. Entering an organisation that already exists reopens its assessment.
+- **Contact email**: where the summary will be sent after the session.
+
+Press **Start assessment**.
+
+### 2. The questionnaire
+
+The console creates the respondent in the platform and moves the tab to the application's assessment page there. The page lists the questionnaire with a **Retake** button; it reads "Retake" because the console has already created the assessment with the contact as its stakeholder. Press it.
+
+The wizard opens with the stakeholder filled in. Press **Next**, then hand over to the respondent or read the questions out. There are eighteen questions in four steps: Environment, Infrastructure Delivery, Security and Access, and Runtime and Connectivity. Each is single choice and has an explanation under it; a respondent who cannot say picks the "I don't know" answer. **Save as draft** keeps a partly answered assessment to resume later from the same page.
+
+On the last step press **Save and review**. The platform saves the assessment and shows its own review page, which the facilitator can ignore.
+
+### 3. Back to the console
+
+The platform has no link back. Return to the console with the browser's Back button, or by opening `/console/` on the same host again. The respondent now appears on the Maintenance tab with its assessment marked "Completed".
+
+### 4. The readout
+
+On the "Generate a readout" tab choose the organisation and press **Generate readout**. It usually takes under a minute. The tab then reports what was stored: the overall result, each area with a signal and its strength, the number of issues and the patterns, with a link to the respondent's record in the platform and a link to the executive summary, a PDF.
+
+Download the PDF from that link, or later from the Maintenance tab, and send it to the contact. Generating a readout again replaces the previous one.
+
+The facts behind the summary, the Issues and Insights for the follow-up team, and the product tags are on the application in the platform. The `presented` fact lists the areas the summary covers, in order.
 
 ## API
 
