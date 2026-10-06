@@ -28,6 +28,7 @@ import yaml
 HERE = Path(__file__).parent
 sys.path.insert(0, str(HERE.parent / "healthcheck-readout"))
 import readout  # noqa: E402
+from impacts import IMPACTS  # noqa: E402
 from pointers import FEATURES, POINTERS  # noqa: E402
 
 BASE = os.environ.get("BASE", "https://localhost:8443")
@@ -43,7 +44,6 @@ ARTEFACTS = os.environ.get("E2E_ARTEFACTS")
 
 def organisation(persona):
     return f"{PREFIX}persona {persona['name'][0]}"
-TABLE_HEADER = "Aspect Response What this means Suggested change"
 
 
 def tags(answer, category):
@@ -71,6 +71,7 @@ def expected(answers):
                     "adjacent": tags(answer, readout.ADJACENT),
                     "product": readout.FOLLOW_UP[capability]["product"],
                     "pointers": POINTERS[key],
+                    "impacts": [f"{d.capitalize()}. {t}" for d, t in IMPACTS[key.split(": ")[0]]["impacts"].items()],
                 }
             )
         elif answer["risk"] == "unknown":
@@ -208,6 +209,8 @@ def check_gap_entry(test, entry, gap):
     test.assertIn(f"konveyor.io/target={gap['product']}", entry["labels"])
     test.assertIn(gap["rationale"], entry["description"])
     test.assertIn(f"**Suggested change:** {gap['mitigation']}", entry["description"])
+    stated = "\n".join(f"- **{impact.replace('. ', '.** ', 1)}" for impact in gap["impacts"])
+    test.assertIn(f"##### Business impact\n\n{stated}", entry["description"])
     for product, features in gap["pointers"].items():
         test.assertIn(f"**{product}**", entry["description"])
         for name in features:
@@ -216,9 +219,9 @@ def check_gap_entry(test, entry, gap):
 
 
 def check_summary(test, pdf, organisation, direct, presented, gaps, unknowns, greens):
-    """The summary prints the presented areas in order, each gap under its own area, the next steps in
-    the same order with every feature sentence footnoted to its page, the unknown questions, and no
-    green answer."""
+    """The summary prints the presented areas in order, each gap under its own area with its business
+    impact, the next steps in the same order with every feature sentence footnoted to its page, the
+    unknown questions, and no green answer."""
     test.assertTrue(pdf.startswith(b"%PDF-"))
     if not PDFTOTEXT:
         test.skipTest("pdftotext is not installed; the summary's text is not checked")
@@ -233,7 +236,8 @@ def check_summary(test, pdf, organisation, direct, presented, gaps, unknowns, gr
     test.assertEqual(summary.find("Suggested next steps") >= 0, bool(gaps))
     if not gaps:
         return
-    headings = [summary.find(f"{c} {TABLE_HEADER}") for c in presented]
+    first = {c: next(g for g in gaps if g["capability"] == c) for c in presented}
+    headings = [summary.find(f"{c} {first[c]['facet']} Your response. {first[c]['answer']}") for c in presented]
     steps = [
         summary.find(f"{n}. {c}. A follow-up session on {readout.FOLLOW_UP[c]['product']} is recommended")
         for n, c in enumerate(presented, 1)
@@ -244,14 +248,18 @@ def check_summary(test, pdf, organisation, direct, presented, gaps, unknowns, gr
     end = len(summary.text)
     for gap in gaps:
         shown = gap["capability"] in presented
-        test.assertEqual(summary.find(gap["rationale"]) >= 0, shown, gap["key"])
-        test.assertEqual(summary.find(gap["mitigation"]) >= 0, shown, gap["key"])
+        for text in (gap["rationale"], gap["mitigation"], *gap["impacts"]):
+            test.assertEqual(summary.find(text) >= 0, shown, (gap["key"], text))
         if not shown:
             continue
         index = presented.index(gap["capability"])
         low, high = headings[index], (headings + [steps[0]])[index + 1]
-        for field in ("answer", "rationale", "mitigation"):
-            test.assertTrue(low < summary.find(gap[field]) < high, (gap["key"], field))
+        # One table per aspect, read as one run of text: a table split over a page repeats its heading.
+        table = (
+            f"{gap['facet']} Your response {gap['answer']} What this means {gap['rationale']} "
+            f"Suggested change {gap['mitigation']} Business impact {' '.join(gap['impacts'])}"
+        )
+        test.assertTrue(low <= summary.find(table, low) < high, gap["key"])
         low, high = steps[index], (steps + [end])[index + 1]
         for features in gap["pointers"].values():
             for name in features:

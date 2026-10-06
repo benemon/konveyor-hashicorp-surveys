@@ -176,7 +176,65 @@ Every feature a pointer names is in the feature catalogue in the same file: its 
 
 A pattern's pointers are those of the answers behind it.
 
-### 4.10 Readout
+### 4.10 Business impact
+
+Each scored aspect has a business impact: what the organisation gains when the suggested change is made, in one sentence per dimension. The dimensions are speed (how soon products, changes and people become productive), cost (engineer time, duplicated effort, wasted capacity, the cost of incidents and audits) and risk (the likelihood and impact of a breach, an outage or a compliance finding). An aspect states its primary dimension first and any other the change materially moves. A dimension is left out when the benefit does not hold for every red or yellow answer to the question, so a statement is true whichever answer the respondent gave. The statements name no product and no feature, and claim no figures. They are held in `healthcheck-readout/impacts.py` by aspect, with the reason for each dimension not claimed.
+
+| Aspect | Dimension | Business impact |
+|---|---|---|
+| provisioning | speed (primary) | Product teams get the environments they need with less waiting, so new services and business changes can reach customers sooner. |
+|  | cost | Engineering effort falls as teams reuse proven infrastructure patterns, and recurring environment delivery becomes less expensive to build and maintain across the organisation. |
+|  | risk | Security and governance teams see fewer configuration exceptions and policy gaps, and can be more confident that infrastructure changes meet organisational standards. |
+| image build | cost (primary) | The cost of image maintenance falls as teams reuse shared definitions across platforms, avoiding repeated engineering work whenever baselines change. |
+|  | speed | Application teams receive updated machine images sooner, so platform changes and security fixes reach dependent systems with less delay. |
+|  | risk | Fewer configuration variations reach production, so inconsistent machine images are less likely to introduce avoidable vulnerabilities or operational failures. |
+| image lifecycle | risk (primary) | Security teams can retire vulnerable or obsolete machine images, limiting further exposure once an affected version has been identified. |
+| | speed, not claimed | Faster remediation depends on lifecycle automation beyond the target state of this aspect. |
+| | cost, not claimed | A lower operating burden depends on rollback and inherited revocation, which go beyond the target state. |
+| image composition | risk (primary) | Vulnerability investigations focus on systems that contain affected software, helping security teams limit unnecessary disruption during urgent remediation. |
+| | speed, not claimed | The gain is a faster security investigation, which is a risk outcome here; product delivery is no quicker. |
+| | cost, not claimed | Recording an image's contents and ancestry has no distinct cost outcome. |
+| guardrails | risk (primary) | Security and compliance teams stop more policy violations before production, so incidents and audit findings from non-compliant infrastructure become less likely. |
+| | speed, not claimed | Only the central-approval answer waits for a review, so a speed benefit does not hold for every answer. |
+| | cost, not claimed | Policies can carry cost controls, but the aspect does not establish that they do. |
+| change and drift | risk (primary) | Operations teams catch unintended infrastructure changes earlier, making outages, failed recoveries and compliance problems from hidden differences less likely. |
+|  | cost | Incident investigation and repair consume less engineering time once unexpected changes are visible, and less rework is needed after infrastructure diverges. |
+| | speed, not claimed | The gain is operational visibility and less downtime; time to market is unchanged. |
+| secret storage | risk (primary) | Application credentials come under consistent control and traceability, so an exposed secret is less likely and quicker to contain. |
+|  | cost | Credential governance requires less duplicated administration across teams and platforms, freeing security and platform capacity from overlapping secret-handling processes. |
+| | speed, not claimed | Central secret handling changes control and administrative effort; products and people are productive no sooner. |
+| workload identity | risk (primary) | Applications depend less on long-lived credentials that can be copied or stolen, shrinking the window in which a compromised secret remains useful. |
+|  | cost | Credential administration consumes less platform-team capacity, with fewer long-lived application secrets to distribute, track and replace across changing environments. |
+| | speed, not claimed | Less credential management is a cost outcome; the target state delivers products no sooner. |
+| rotation | risk (primary) | A stolen application credential remains useful for less time, limiting the opportunity for unauthorised access before expiry or automatic replacement. |
+|  | cost | Routine credential changes demand less coordination from platform and application teams, and keeping access current takes less recurring effort. |
+| | speed, not claimed | Credentials on demand are a convenience; time to market is unchanged. |
+| certificates | risk (primary) | Service owners face fewer outages and security exposures from expired or mismanaged internal certificates, protecting application availability and trusted connections. |
+|  | cost | Certificate administration consumes less platform-team capacity, freeing engineers from repeated requests, tracking and renewal work across internal services. |
+| | speed, not claimed | The gain is fewer errors, missed renewals and outages; product delivery is no quicker. |
+| access path | risk (primary) | A compromised engineer account exposes fewer systems, limiting the potential blast radius of unauthorised access to sensitive infrastructure. |
+| | speed, not claimed | Direct or broad network access is already fast for some respondents. |
+| | cost, not claimed | The saving on bastion administration applies to one starting answer only. |
+| access credentials | risk (primary) | Stolen, shared or lingering privileged credentials become less common, limiting the organisation's exposure to unauthorised infrastructure access. |
+|  | cost | Privileged access needs less manual credential administration, freeing operations teams from repeated issuing, rotation and withdrawal work. |
+| | speed, not claimed | Simpler credential handling reduces friction, but the starting answers do not consistently imply a delivery gain. |
+| visibility | risk (primary) | Incident response teams establish the scope of privileged-access incidents with greater confidence, supporting faster containment and more complete evidence. |
+|  | cost | Audit and incident teams reconstruct privileged activity from one evidence trail, so investigations and compliance reviews take less effort. |
+| | speed, not claimed | Faster evidence gathering improves investigations and audits; product delivery is no quicker. |
+| discovery | speed (primary) | Application teams change and scale services with less coordination around changing endpoints, so releases proceed sooner across dynamic environments. |
+|  | cost | Service-location changes create less platform work across environments, avoiding the recurring effort of maintaining separate discovery methods and configuration. |
+| | risk, not claimed | Lower downtime risk is not established for every starting answer. |
+| service-to-service security | risk (primary) | Compromising one service exposes fewer unintended targets, limiting lateral movement and the potential impact of a breach across application environments. |
+| | speed, not claimed | Automated policy removes network-change delays for some respondents, but broad network access already connects without waiting. |
+| | cost, not claimed | The saving on firewall management does not hold for every starting answer. |
+| deployment | speed (primary) | Product teams release application changes sooner, with fewer delays caused by platform-specific deployment practices and reliance on individual operating knowledge. |
+| | cost, not claimed | A common workflow is simpler to operate, but the target state has no distinct cost outcome. |
+| | risk, not claimed | Safer update strategies go beyond the target state of this aspect. |
+| non-standard workloads | cost (primary) | Operations teams support diverse workloads with less duplicated tooling and specialist administration, avoiding the expense of separate operating models for each type. |
+| | speed, not claimed | Separate platforms may already deliver these workloads quickly. |
+| | risk, not claimed | Respondents using separate platforms may already have equivalent recovery. |
+
+### 4.11 Readout
 
 The `healthcheck-readout` addon derives the readout from a completed assessment. `healthcheck-readout/readout.py` is the single implementation of sections 4.3 to 4.5 and 4.7 to 4.9. The overall result (4.6) is MTA's own.
 
@@ -186,12 +244,12 @@ The addon cannot read the assessment itself. The Healthcheck Console service rea
 
 Running the addon again replaces its previous output. The addon writes to the application:
 
-- an analysis with one entry per red or yellow answer, one per pattern and one per adjacent signal. Each answer is entered twice, with an effort of 1 for Issues and with none for Insights. Patterns and adjacent signals are entered for Insights only. An adjacent signal's entry is in the category `Adjacent`, names its source capabilities and says that it is not a direct finding. An application's effort is therefore its number of gaps. An entry's target technologies are the capabilities and products it relates to. Its description carries the rationale, the suggested change and, for each feature its pointers name, the catalogue sentence and documentation link, under the feature's product; for a pattern it also carries the answers behind it;
+- an analysis with one entry per red or yellow answer, one per pattern and one per adjacent signal. Each answer is entered twice, with an effort of 1 for Issues and with none for Insights. Patterns and adjacent signals are entered for Insights only. An adjacent signal's entry is in the category `Adjacent`, names its source capabilities and says that it is not a direct finding. An application's effort is therefore its number of gaps. An entry's target technologies are the capabilities and products it relates to. Its description carries the rationale, the suggested change, the aspect's business impact and, for each feature its pointers name, the catalogue sentence and documentation link, under the feature's product; for a pattern it also carries the answers behind it;
 - facts under the source `healthcheck-readout`: `questionnaire_version`, `readout_version`, `environment`, `verdict`, `direct`, `areas` (every area with a signal, ranked, with its product, strength, facets and evidence), `presented`, `adjacent`, `implementation`, `patterns`, `in_good_shape`, `unknowns`, `follow_up` (topics, roles, product and talk track for each presented area) and `generated`;
-- an executive summary as a PDF, `healthcheck-summary.pdf` in the application's bucket (section 4.11);
+- an executive summary as a PDF, `healthcheck-summary.pdf` in the application's bucket (section 4.12);
 - one tag per capability with a direct signal, named for the product and the strength, such as `Vault: strong`. Each product has its own tag category, in the product's brand colour. The addon creates these categories on first use.
 
-### 4.11 Executive summary
+### 4.12 Executive summary
 
 The summary is the document sent to the respondent after the session. `healthcheck-readout/summary.py` writes it from the readout as Pandoc Markdown, and renders it to A4 PDF with Pandoc, the Tectonic TeX engine, the Eisvogel template and IBM Plex Sans. The addon's image is built on the UBI Python image. Its build downloads those four from their GitHub releases, the product marks from the Flight icons package and the TeX files the summary needs, and installs svglib and reportlab to render the marks, so the addon needs no network to render.
 
@@ -199,10 +257,10 @@ It contains:
 
 1. a title page with the organisation as its title, the healthcheck's name as its subtitle and the date the readout was generated;
 2. an introduction that states the purpose and says that the highest priority areas are the ones the report covers, with a table of the environment, the areas highlighted and the areas not highlighted;
-3. one section per presented area (section 4.7), in ranked order, with a row per red or yellow answer: the aspect, the response, what it means (the rationale) and the suggested change (the mitigation), in four columns. The section's heading and table are kept on one page by an estimate of the table's height. The first section's heading is followed by a paragraph saying which tier the sections cover: the strong areas as the highest priority with the moderate ones left for a later discussion, every area when all are strong, or the moderate areas when none is strong;
+3. one section per presented area (section 4.7), in ranked order, with a table per red or yellow answer. The table's heading is the aspect, across both columns, and its four rows are labelled: the response, what it means (the rationale), the suggested change (the mitigation) and the business impact (section 4.10), primary dimension first. A table is never split across pages, and an area's heading stays with its first table. The first section's heading is followed by a paragraph saying which tier the sections cover: the strong areas as the highest priority with the moderate ones left for a later discussion, every area when all are strong, or the moderate areas when none is strong;
 4. the patterns that hold;
 5. the questions answered "unknown";
-6. a next step per presented area, with the product's mark: a recommendation of a follow-up session on the product, then one paragraph per red or yellow answer made of the catalogue sentences of its pointers, each with its documentation page as a footnote, then the roles worth involving. A feature appears once per area, and a documentation page is footnoted once per summary; a later mention repeats the footnote's number;
+6. a next step per presented area, with the product's mark: a recommendation of a follow-up session on the product, then, indented under it, one paragraph per red or yellow answer made of the catalogue sentences of its pointers, each with its documentation page as a footnote, then the roles worth involving. A feature appears once per area, and a documentation page is footnoted once per summary; a later mention repeats the footnote's number;
 7. when the solution adjacency note applies (section 4.5), a closing sentence naming Infrastructure Lifecycle's product as relevant to those sessions.
 
 When no area has a signal, the introduction says so, and the summary has no next steps and makes no claim that further discussion would help.
@@ -439,6 +497,8 @@ Structure of the questionnaire:
 - Red and yellow answers have a rationale and a mitigation. Green and unknown answers have neither.
 - Every key a pattern refers to exists.
 - Capability pointers exist for exactly the red and yellow answers, each lists its capability's own product first, and each names exactly the products of the answer's direct and adjacent capabilities.
+- No aspect's table in the summary exceeds 40 lines of its source, about two thirds of a page, so a table that cannot be split always fits.
+- Every scored aspect has a business impact, with every dimension either stated or given a reason for its absence, in one sentence each that names no product.
 - Every feature a pointer names is catalogued, and every catalogued feature is named by a pointer, with a one-sentence description and a documentation page on developer.hashicorp.com.
 - No string in the questionnaire contains Terraform, Packer, Vault, Boundary, Consul, Nomad or HashiCorp, apart from the questionnaire's name.
 - `DESIGN.md` equals the output of `gen_design.py`.
@@ -448,7 +508,7 @@ Personas, in `personas.yaml`: ten reference respondents, each with its answers a
 - Every persona's readout equals its expected values. The overall result is computed with the threshold rule in section 3.
 - Every pattern holds for at least one persona.
 - For every persona, the gaps reported are exactly its red and yellow answers, with their wording.
-- For every persona, the executive summary has a section for each presented area and a row for each of its answers.
+- For every persona, the executive summary has a section for each presented area and, for each of its answers, the response, what it means, the suggested change and the business impact.
 - For every persona, no area with a direct or adjacent signal is reported as having no signal.
 - For every persona, the summary says further discussion would benefit the organisation, and lists next steps, only when an area is highlighted.
 - The three image questions signal Image Lifecycle on red and yellow answers only, each has a not-applicable answer, and choosing not-applicable for all three creates no signal, pattern or product.
@@ -499,6 +559,7 @@ healthcheck-readout/
 ├── app.py
 ├── readout.py
 ├── pointers.py
+├── impacts.py
 ├── summary.py
 └── fetch.py
 healthcheck-console/

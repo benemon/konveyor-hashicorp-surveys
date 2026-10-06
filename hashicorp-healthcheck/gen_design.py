@@ -6,6 +6,7 @@ import yaml
 HERE = Path(__file__).parent
 sys.path.insert(0, str(HERE.parent / "healthcheck-readout"))
 import readout  # noqa: E402
+from impacts import IMPACTS  # noqa: E402
 
 ABBR = {
     "Infrastructure Lifecycle": "IL",
@@ -107,6 +108,16 @@ def personas(doc):
     return "\n".join(rows)
 
 
+def business_impacts():
+    rows = ["| Aspect | Dimension | Business impact |", "|---|---|---|"]
+    for facet, entry in IMPACTS.items():
+        for number, (dimension, text) in enumerate(entry["impacts"].items()):
+            rows.append(f"| {facet if number == 0 else ''} | {dimension}{' (primary)' if number == 0 else ''} | {text} |")
+        for dimension, reason in entry["omitted"].items():
+            rows.append(f"| | {dimension}, not claimed | {reason} |")
+    return "\n".join(rows)
+
+
 def render():
     doc = yaml.safe_load((HERE / "questionnaire.yaml").read_text())
     text = (HERE / "design.tmpl.md").read_text()
@@ -115,6 +126,7 @@ def render():
         ("{{PATTERNS}}", patterns()),
         ("{{THRESHOLDS}}", thresholds(doc)),
         ("{{PERSONAS}}", personas(doc)),
+        ("{{IMPACTS}}", business_impacts()),
     ):
         text = text.replace(placeholder, value)
     return text
