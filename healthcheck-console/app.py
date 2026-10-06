@@ -3,7 +3,9 @@ import io
 import json
 import os
 import urllib.error
+import urllib.parse
 import urllib.request
+import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -181,6 +183,21 @@ def summary(application):
         raise ValueError("no summary is stored for this respondent: generate its readout") from None
 
 
+def summaries(applications):
+    """A zip of the summaries of the applications given, each named as the page names a download."""
+    names = {a["id"]: a["name"] for a in hub("applications")}
+    missing = [a for a in applications if a not in names]
+    if missing:
+        raise ValueError(f"no respondent has application {missing[0]}")
+    archive = io.BytesIO()
+    # PDFs are already compressed.
+    with zipfile.ZipFile(archive, "w", zipfile.ZIP_STORED) as bundle:
+        for application in applications:
+            name = names[application].replace("/", "-").replace("\\", "-")
+            bundle.writestr(f"{name} - 5 Minute HashiCorp Healthcheck.pdf", summary(application))
+    return archive.getvalue()
+
+
 def tasks(query):
     # The hub refuses an unbounded task list once it holds more than 500 tasks.
     found = []
@@ -268,14 +285,15 @@ class Handler(BaseHTTPRequestHandler):
         return fields if isinstance(fields, dict) else {}
 
     def do_GET(self):
-        path = self.path.removeprefix(PREFIX)
+        unprefixed = self.path.removeprefix(PREFIX)
+        path, _, query = unprefixed.partition("?")
         task = path.removeprefix("/api/readouts/")
         application = path.removeprefix("/api/summaries/")
         if self.path == PREFIX:
             self.send_response(301)
             self.send_header("Location", f"{PREFIX}/")
             self.end_headers()
-        elif path == self.path:
+        elif unprefixed == self.path:
             self.reply(404, {"error": "not found"})
         elif path == "/":
             self.reply(200, INDEX, "text/html; charset=utf-8")
@@ -289,6 +307,16 @@ class Handler(BaseHTTPRequestHandler):
             self.call_mta(respondents)
         elif path == "/api/respondents.csv":
             self.call_mta(respondents_csv, content_type="text/csv; charset=utf-8", filename="respondents.csv")
+        elif path == "/api/summaries.zip":
+            chosen = urllib.parse.parse_qs(query).get("applications", [""])[0].split(",")
+            if not chosen or not all(a.isdigit() for a in chosen):
+                self.reply(400, {"error": "applications must list application ids, separated by commas"})
+            else:
+                self.call_mta(
+                    lambda: summaries([int(a) for a in chosen]),
+                    content_type="application/zip",
+                    filename="healthcheck-summaries.zip",
+                )
         elif task != path and task.isdigit():
             self.call_mta(lambda: readout_state(task))
         elif application != path and application.isdigit():

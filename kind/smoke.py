@@ -6,8 +6,12 @@ E2E_CLEAR=1 confirms delete-all, which removes every respondent in the environme
 the check removes only the respondent it created.
 """
 
+import io
 import os
+import tempfile
+import time
 import unittest
+import zipfile
 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -15,8 +19,11 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as expected
 from selenium.webdriver.support.ui import WebDriverWait
 
+import e2e  # noqa: E402
+
 BASE = os.environ.get("BASE", "https://localhost:8443")
 ORGANISATION = "Smoke Test Ltd"
+COMPLETED = f"{e2e.PREFIX}persona B"
 
 
 class Page(unittest.TestCase):
@@ -26,6 +33,8 @@ class Page(unittest.TestCase):
         options.add_argument("--headless=new")
         options.add_argument("--ignore-certificate-errors")
         options.add_argument("--window-size=1512,900")
+        cls.downloads = tempfile.mkdtemp()
+        options.add_experimental_option("prefs", {"download.default_directory": cls.downloads, "download.prompt_for_download": False})
         # GitHub's runners name the directory of the chromedriver that matches their Chrome.
         driver = os.environ.get("CHROMEWEBDRIVER")
         service = Service(os.path.join(driver, "chromedriver")) if driver else Service()
@@ -73,7 +82,30 @@ class Page(unittest.TestCase):
         self.wait.until(lambda b: not self.rows())
         self.assertEqual(self.browser.find_element(By.ID, "respondent-page").text, "No respondents match")
 
-    def test_3_delete_all_dialog_answers_the_mouse(self):
+    def test_3_selected_summaries_download_as_a_zip(self):
+        persona = next(p for p in e2e.PERSONAS if p["name"].startswith("B"))
+        application, state = e2e.respond(COMPLETED, persona["answers"])
+        self.assertEqual(state["state"], "Succeeded", state["errors"])
+        self.open_maintenance()
+        self.find("#respondent-filter").send_keys("persona B")
+        self.wait.until(lambda b: len(self.rows()) == 1)
+        self.find("#select-all").click()
+        button = self.find("#download-selected")
+        self.assertEqual(button.text, "Download 1 summary (ZIP)")
+        button.click()
+        for _ in range(60):
+            found = [f for f in os.listdir(self.downloads) if f.endswith(".zip")]
+            if found:
+                break
+            time.sleep(1)
+        self.assertEqual(found, ["healthcheck-summaries.zip"])
+        archive = zipfile.ZipFile(os.path.join(self.downloads, found[0]))
+        self.assertEqual(archive.namelist(), [f"{COMPLETED} - 5 Minute HashiCorp Healthcheck.pdf"])
+        self.assertTrue(archive.read(archive.namelist()[0]).startswith(b"%PDF-"))
+        if os.environ.get("E2E_CLEAR") != "1":
+            e2e.console(f"respondents/{application}", "DELETE")
+
+    def test_4_delete_all_dialog_answers_the_mouse(self):
         self.open_maintenance()
         dialog = self.browser.find_element(By.ID, "delete-all-modal")
         self.find("#delete-all").click()

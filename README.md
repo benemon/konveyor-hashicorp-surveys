@@ -129,6 +129,12 @@ curl "https://<MTA host>/console/api/readouts/<task id>"
 
 The first call returns the task id. The second gives the task's state and, once it has succeeded, what was stored in MTA. `GET organisations` lists the organisations in MTA.
 
+Download the executive summaries of several respondents as one zip, by application id:
+
+```sh
+curl -o summaries.zip "https://<MTA host>/console/api/summaries.zip?applications=<id>,<id>"
+```
+
 Download an executive summary, by application id:
 
 ```sh
@@ -137,7 +143,7 @@ curl -o summary.pdf "https://<MTA host>/console/api/summaries/<application id>"
 
 ## Maintenance
 
-The "Maintenance" tab lists every respondent with its contact, whether its assessment is complete, when its readout was generated and a link to its summary. Each function is also in the API:
+The "Maintenance" tab lists every respondent with its contact, whether its assessment is complete, when its readout was generated and a link to its summary. A respondent with a summary can be selected, singly or with the select-all box for every respondent matching the filter, and the selected summaries download together as one zip. Each function is also in the API:
 
 | Function | API |
 |---|---|
