@@ -166,6 +166,10 @@
                   <button class="hds-button hds-button--size-medium hds-button--color-primary" type="button" id="generate-all">
                     <span class="hds-button__text">Generate all readouts</span>
                   </button>
+                  <button class="hds-button hds-button--size-medium hds-button--color-secondary" type="button" id="download-selected" disabled>
+                    <svg class="hds-icon hds-button__icon" aria-hidden="true"><use href="icons.svg#download-16"></use></svg>
+                    <span class="hds-button__text">Download summaries (ZIP)</span>
+                  </button>
                   <a class="hds-button hds-button--size-medium hds-button--color-secondary" href="api/respondents.csv">
                     <svg class="hds-icon hds-button__icon" aria-hidden="true"><use href="icons.svg#download-16"></use></svg>
                     <span class="hds-button__text">Download respondents (CSV)</span>
@@ -204,6 +208,7 @@
               <table class="hds-table hds-table--striped hds-table--density-medium hds-table--valign-middle">
                 <thead class="hds-table__thead">
                   <tr class="hds-table__tr">
+                    <th class="hds-table__th" scope="col"><input class="hds-form-checkbox" type="checkbox" id="select-all" aria-label="Select every respondent with a summary"></th>
                     <th class="hds-table__th" scope="col">Organisation</th>
                     <th class="hds-table__th" scope="col">Contact</th>
                     <th class="hds-table__th" scope="col">Assessment</th>
@@ -445,9 +450,32 @@
     const respondentPage = document.getElementById("respondent-page");
     const respondentsPrevious = document.getElementById("respondents-previous");
     const respondentsNext = document.getElementById("respondents-next");
+    const selectAll = document.getElementById("select-all");
+    const downloadSelected = document.getElementById("download-selected");
     const PAGE = 25;
     let respondents = [];
     let page = 0;
+    // Applications whose summaries are selected for download; kept across pages and filters.
+    const selected = new Set();
+
+    function matchingRespondents() {
+      const wanted = respondentFilter.value.trim().toLowerCase();
+      return respondents.filter(
+        (r) => !wanted || r.organisation.toLowerCase().includes(wanted) || r.contact.toLowerCase().includes(wanted),
+      );
+    }
+
+    function showSelection() {
+      const count = selected.size;
+      downloadSelected.disabled = count === 0;
+      downloadSelected.querySelector(".hds-button__text").textContent =
+        count ? `Download ${count} ${count === 1 ? "summary" : "summaries"} (ZIP)` : "Download summaries (ZIP)";
+      const selectable = matchingRespondents().filter((r) => r.generated);
+      const chosen = selectable.filter((r) => selected.has(r.application)).length;
+      selectAll.disabled = selectable.length === 0;
+      selectAll.checked = selectable.length > 0 && chosen === selectable.length;
+      selectAll.indeterminate = chosen > 0 && chosen < selectable.length;
+    }
     const maintenanceStatus = document.getElementById("maintenance-status");
     const generateAll = document.getElementById("generate-all");
     const deleteAllModal = document.getElementById("delete-all-modal");
@@ -463,9 +491,7 @@
 
     function showRespondents() {
       const wanted = respondentFilter.value.trim().toLowerCase();
-      const matching = respondents.filter(
-        (r) => !wanted || r.organisation.toLowerCase().includes(wanted) || r.contact.toLowerCase().includes(wanted),
-      );
+      const matching = matchingRespondents();
       const pages = Math.max(1, Math.ceil(matching.length / PAGE));
       page = Math.min(page, pages - 1);
       const shown = matching.slice(page * PAGE, (page + 1) * PAGE);
@@ -474,9 +500,19 @@
         : wanted ? "No respondents match" : "No respondents";
       respondentsPrevious.disabled = page === 0;
       respondentsNext.disabled = page >= pages - 1;
+      showSelection();
       respondentRows.replaceChildren();
       for (const respondent of shown) {
           const row = add(respondentRows, "tr", undefined, "hds-table__tr");
+          const pick = add(cell(row), "input", undefined, "hds-form-checkbox");
+          pick.type = "checkbox";
+          pick.disabled = !respondent.generated;
+          pick.checked = selected.has(respondent.application);
+          pick.setAttribute("aria-label", `Select ${respondent.organisation}`);
+          pick.addEventListener("change", () => {
+            selected[pick.checked ? "add" : "delete"](respondent.application);
+            showSelection();
+          });
           cell(row, respondent.organisation, "hds-font-weight-medium");
           cell(row, respondent.contact);
           const status = cell(row);
@@ -512,6 +548,11 @@
     async function listRespondents() {
       try {
         respondents = await api("respondents");
+        for (const application of selected) {
+          if (!respondents.some((r) => r.application === application && r.generated)) {
+            selected.delete(application);
+          }
+        }
         const completed = respondents.filter((r) => r.completed).length;
         const generated = respondents.filter((r) => r.generated).length;
         respondentCount.textContent =
@@ -525,6 +566,17 @@
     respondentFilter.addEventListener("input", () => {
       page = 0;
       showRespondents();
+    });
+    selectAll.addEventListener("change", () => {
+      for (const respondent of matchingRespondents()) {
+        if (respondent.generated) {
+          selected[selectAll.checked ? "add" : "delete"](respondent.application);
+        }
+      }
+      showRespondents();
+    });
+    downloadSelected.addEventListener("click", () => {
+      location.assign(`api/summaries.zip?applications=${[...selected].join(",")}`);
     });
     respondentsPrevious.addEventListener("click", () => {
       page -= 1;

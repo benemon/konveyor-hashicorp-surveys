@@ -19,7 +19,9 @@ import subprocess
 import sys
 import time
 import unittest
+import urllib.error
 import urllib.request
+import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -382,6 +384,18 @@ class Personas(unittest.TestCase):
                 self.assertEqual(row["direct"], persona["direct"])
                 self.assertEqual(exported[organisation(persona)][1:3], ["e2e@example.com", "yes"])
         self.assertIn(organisation(PERSONAS[0]), console("organisations"))
+
+    def test_summaries_download_together_as_a_zip(self):
+        applications = {organisation(p): self.results[organisation(p)][0] for p in PERSONAS}
+        archive = zipfile.ZipFile(io.BytesIO(console("summaries.zip?applications=" + ",".join(map(str, applications.values())), raw=True)))
+        self.assertEqual(
+            sorted(archive.namelist()), sorted(f"{name} - 5 Minute HashiCorp Healthcheck.pdf" for name in applications)
+        )
+        for entry in archive.namelist():
+            self.assertTrue(archive.read(entry).startswith(b"%PDF-"), entry)
+        with self.assertRaises(urllib.error.HTTPError) as refused:
+            console("summaries.zip?applications=", raw=True)
+        self.assertEqual(refused.exception.code, 400)
 
     def test_zz_delete_one_then_optionally_all(self):
         application, _ = self.results[organisation(PERSONAS[0])]
